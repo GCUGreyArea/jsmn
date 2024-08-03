@@ -1,4 +1,4 @@
-#include "../jsmn.h"
+#include "../jsmn.hpp"
 #include <errno.h>
 #include <stdio.h>
 #include <stdlib.h>
@@ -25,17 +25,17 @@ static inline void *realloc_it(void *ptrmem, size_t size) {
  * The output looks like YAML, but I'm not sure if it's really compatible.
  */
 
-static int dump(const char *js, jsmntok_t *t, size_t count, int indent) {
+static int dump(const char *m_js, jsmntok_t *t, size_t count, int indent) {
   int i, j, k;
   jsmntok_t *key;
   if (count == 0) {
     return 0;
   }
   if (t->type == JSMN_PRIMITIVE) {
-    printf("%.*s", t->end - t->start, js + t->start);
+    printf("%.*s", t->end - t->start, m_js + t->start);
     return 1;
   } else if (t->type == JSMN_STRING) {
-    printf("'%.*s'", t->end - t->start, js + t->start);
+    printf("'%.*s'", t->end - t->start, m_js + t->start);
     return 1;
   } else if (t->type == JSMN_OBJECT) {
     printf("\n");
@@ -45,10 +45,10 @@ static int dump(const char *js, jsmntok_t *t, size_t count, int indent) {
         printf("  ");
       }
       key = t + 1 + j;
-      j += dump(js, key, count - j, indent + 1);
+      j += dump(m_js, key, count - j, indent + 1);
       if (key->size > 0) {
         printf(": ");
-        j += dump(js, t + 1 + j, count - j, indent + 1);
+        j += dump(m_js, t + 1 + j, count - j, indent + 1);
       }
       printf("\n");
     }
@@ -61,7 +61,7 @@ static int dump(const char *js, jsmntok_t *t, size_t count, int indent) {
         printf("  ");
       }
       printf("   - ");
-      j += dump(js, t + 1 + j, count - j, indent + 1);
+      j += dump(m_js, t + 1 + j, count - j, indent + 1);
       printf("\n");
     }
     return j + 1;
@@ -72,7 +72,7 @@ static int dump(const char *js, jsmntok_t *t, size_t count, int indent) {
 int main() {
   int r;
   int eof_expected = 0;
-  char *js = NULL;
+  char * js = NULL;
   size_t jslen = 0;
   char buf[BUFSIZ];
 
@@ -81,14 +81,7 @@ int main() {
   size_t tokcount = 2;
 
   /* Prepare parser */
-  jsmn_init(&p);
-
-  /* Allocate some tokens as a start */
-  tok = malloc(sizeof(*tok) * tokcount);
-  if (tok == NULL) {
-    fprintf(stderr, "malloc(): errno=%d\n", errno);
-    return 3;
-  }
+  // p.jsmn_init();
 
   for (;;) {
     /* Read another chunk */
@@ -106,15 +99,15 @@ int main() {
       }
     }
 
-    js = realloc_it(js, jslen + r + 1);
-    if (js == NULL) {
+    m_js = realloc_it(m_js, jslen + r + 1);
+    if (m_js == NULL) {
       return 3;
     }
-    strncpy(js + jslen, buf, r);
+    strncpy(m_js + jslen, buf, r);
     jslen = jslen + r;
 
   again:
-    r = jsmn_parse(&p, js, jslen, tok, tokcount);
+    r = p.jsmn_parse(&p, m_js, jslen, tok, tokcount);
     if (r < 0) {
       if (r == JSMN_ERROR_NOMEM) {
         tokcount = tokcount * 2;
@@ -125,7 +118,7 @@ int main() {
         goto again;
       }
     } else {
-      dump(js, tok, p.toknext, 0);
+      dump(m_js, tok, p.m_token_next, 0);
       eof_expected = 1;
     }
   }
