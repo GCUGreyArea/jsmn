@@ -24,6 +24,9 @@
 #ifndef JSMN_H
 #define JSMN_H
 
+#define JSMN_STRICT 1
+#define JSMN_PARENT_LINKS 1
+
 #include <stddef.h>
 #include <string.h>
 
@@ -81,8 +84,8 @@ class jsmn_parser {
     unsigned int m_num_tokens; // Number of tokens in the array
 
     // String to parse
-    const char *m_js; // NULL terminated JSON string
     size_t m_length;  // Length of JSON string
+    char *m_js;       // NULL terminated JSON string
     unsigned int m_mull;
 
   protected:
@@ -94,13 +97,27 @@ class jsmn_parser {
 
   public:
     jsmn_parser(unsigned int mull = 2, const char *js = "{}")
-        : m_mull(mull), m_pos(0), m_token_next(0), m_toksuper(-1), m_js(js),
-          m_num_tokens(0), m_tokens(nullptr), m_length(strlen(js)) {}
+        : m_mull(mull), 
+          m_pos(0), 
+          m_token_next(0), 
+          m_toksuper(-1),
+          m_length(strlen(js)), 
+          m_js(new char[m_length+1]),
+          m_num_tokens(def_size), 
+          m_tokens(new jsmntok_t[def_size]) {
+            strcpy(m_js,js);
+    }
 
     ~jsmn_parser();
     void init(const char *js);
     int parse();
-	jsmntok_t * get_tokens() {return m_tokens;}
+    jsmntok_t *get_token(int idx) { return &m_tokens[idx]; }
+    size_t parsed_tokens() {return m_token_next; }
+    bool serialise(char *file_name);
+    bool deserialise(char *file_name);
+    void print_token(int idx);
+
+    unsigned int last_token() {return m_token_next;}
 };
 
 #endif /* JSMN_H */

@@ -1,11 +1,17 @@
 
 #include "jsmn.hpp"
+
+#include <stdio.h>
 #include <cstring>
 
 jsmn_parser::~jsmn_parser() {
-    if (m_num_tokens > 0) {
-        delete[] m_tokens;
-    }
+    delete[] m_tokens;
+    m_tokens = nullptr;
+    m_num_tokens = 0;
+
+    delete [] m_js;
+    m_js = nullptr;
+    m_length = 0;
 }
 
 jsmntok_t *jsmn_parser::jsmn_alloc_token() {
@@ -27,7 +33,9 @@ jsmntok_t *jsmn_parser::jsmn_alloc_token() {
     tok = &m_tokens[m_token_next++];
     tok->start = tok->end = -1;
     tok->size = 0;
+#ifdef JSMN_PARENT_LINKS
     tok->parent = -1;
+#endif
     return tok;
 }
 
@@ -124,7 +132,7 @@ int jsmn_parser::jsmn_parse_string() {
             }
             jsmn_fill_token(token, start + 1, m_pos, JSMN_STRING);
 #ifdef JSMN_PARENT_LINKS
-            token->parent = parser->m_toksuper;
+            token->parent = m_toksuper;
 #endif
             return 0;
         }
@@ -231,7 +239,7 @@ int jsmn_parser::parse() {
                         return JSMN_ERROR_INVAL;
                     }
                     token->end = m_pos + 1;
-                    m_toksuper = parent;
+                    m_toksuper = token->parent;
                     break;
                 }
                 if (token->parent == -1) {
@@ -321,8 +329,8 @@ int jsmn_parser::parse() {
         case 'f':
         case 'n':
             /* And they must not be keys of the object */
-            if (m_tokens != NULL && parser->m_toksuper != -1) {
-                const jsmntok_t *t = &m_tokens[parser->m_toksuper];
+            if (m_tokens != NULL && m_toksuper != -1) {
+                const jsmntok_t *t = &m_tokens[m_toksuper];
                 if (t->type == JSMN_OBJECT ||
                     (t->type == JSMN_STRING && t->size != 0)) {
                     return JSMN_ERROR_INVAL;
@@ -371,11 +379,106 @@ void jsmn_parser::init(const char *js) {
     m_token_next = 0;
     m_toksuper = -1;
 
-    m_js = js;
-    m_length = strlen(m_js);
+    size_t len = m_length;
+    m_length = strlen(js);
+    delete [] m_js;
+    m_js = new char[m_length+1];
 
-    if (m_num_tokens == 0) {
-        m_tokens = new jsmntok_t[def_size];
-        m_num_tokens = def_size;
+    strcpy(m_js,js);
+    m_js[m_length] = '\0';
+
+    memset(m_tokens,0,sizeof(jsmntok_t)*m_num_tokens);
+}
+
+bool jsmn_parser::serialise(char * file_name) {
+    FILE * fp = fopen(file_name,"wd");
+    if(fp == NULL) {
+        return false;
     }
+
+    // Save the string and length 
+    fwrite(&m_length,sizeof(m_length),1,fp);
+    fwrite(m_js,sizeof(char),m_length,fp);
+    fwrite(&m_pos, sizeof(m_pos),1,fp);
+
+    // Write out the last token index
+    fwrite(&m_token_next,sizeof(m_token_next),1,fp);
+
+    // Write the number of objects first 
+    fwrite(m_tokens,sizeof(struct jsmntok),m_token_next,fp);
+
+    // Close the file and exit
+    fclose(fp);
+
+    return true;
+}
+
+bool jsmn_parser::deserialise(char * file_name) {
+    FILE * fp = fopen(file_name,"rd");
+    if(fp == NULL) {
+        return false;
+    }
+
+    // Retrieve the string
+    fread(&m_length,sizeof(m_length),1,fp);
+    if(m_length == 0) {
+        return false;
+    }
+    delete [] m_js;
+    m_js = new char[m_length+1];
+    fread(m_js,sizeof(char),m_length,fp);
+    m_js[m_length] = '\0';
+
+    // Read back the position
+    fread(&m_pos,sizeof(m_pos),1,fp);
+
+    // Read in the last token idex
+    fread(&m_token_next,sizeof(m_token_next),1,fp);
+
+    // Set up the token array if we need to
+    if(m_token_next-1 > m_num_tokens) {
+        if(m_tokens != nullptr) {
+            delete [] m_tokens;
+        }
+        m_tokens = new jsmntok_t[m_token_next+1];
+        m_num_tokens = m_token_next+1;
+    }
+
+    fread(m_tokens,sizeof(struct jsmntok),m_token_next,fp);
+    fclose(fp);
+
+    return true;
+}
+
+void jsmn_parser::print_token(int idx) {
+    jsmntok_t * t = &m_tokens[idx];
+
+    switch(t->type) {
+        case  JSMN_UNDEFINED: 
+            printf("type: undefined\n");
+            break;
+        case JSMN_OBJECT:
+            printf("type: object\n");
+            break;   
+        case JSMN_ARRAY:
+            printf("type: array\n");
+            break;
+        case JSMN_STRING:
+            printf("type: string\n");
+            break;
+        case JSMN_PRIMITIVE:
+            printf("type: primitive\n");
+            break;
+    }
+        printf("start: %d\nend::%d\nsize: %d\nparent: %d\n",
+            t->start,t->end,t->size,t->parent);
+
+        // cpy the string into a buffer and print it
+        size_t len = t->end-t->start;
+        char * buff = new char[len+1];
+        strncpy(buff,(m_js+t->start),len);
+        buff[len] = '\0';
+
+        printf("value: %s\n", buff);
+        delete [] buff;
 }
