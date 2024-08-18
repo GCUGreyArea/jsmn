@@ -1,6 +1,15 @@
 JSMN
 ====
 
+Update
+------
+
+This is a basic prot of JSMN to c++. The ongoing work is to implement full `JQ path` compatibility so that the structures representing parsed `JSON` can ge searched using `JQ path` syntax.
+
+There is a [TODO](todo.md) list of things that need to be completed in order for this code to function.
+
+The reset of this documen remains unchanged and wil be updated as work progresses...
+
 [![Build Status](https://travis-ci.org/zserge/jsmn.svg?branch=master)](https://travis-ci.org/zserge/jsmn)
 
 jsmn (pronounced like 'jasmine') is a minimalistic JSON parser in C.  It can be
@@ -147,13 +156,13 @@ All job is done by `jsmn_parser` object. You can initialize a new parser using:
 
 	jsmn_init(&parser);
 
-	// js - pointer to JSON string
+	// m_js - pointer to JSON string
 	// tokens - an array of tokens available
 	// 10 - number of tokens available
-	jsmn_parse(&parser, js, strlen(js), tokens, 10);
+	jsmn_parse(&parser, m_js, strlen(m_js), tokens, 10);
 
 This will create a parser, and then it tries to parse up to 10 JSON tokens from
-the `js` string.
+the `m_js` string.
 
 A non-negative return value of `jsmn_parse` is the number of tokens actually
 used by the parser.
