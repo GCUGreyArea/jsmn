@@ -1,7 +1,7 @@
 #ifndef __TEST_UTIL_H__
 #define __TEST_UTIL_H__
 
-#include "../jsmn.hpp"
+#include <jsmn.hpp>
 
 static int vtokeq(const char *s, jsmntok_t *t, unsigned long numtok,
                   va_list ap) {
@@ -74,22 +74,23 @@ static int parse(const char *s, int status, unsigned long numtok, ...) {
   int r;
   int ok = 1;
   va_list args;
-  jsmn_parser p;
-  jsmntok_t *t = malloc(numtok * sizeof(jsmntok_t));
+  jsmn_parser p(s);
 
-  jsmn_init(&p);
-  r = jsmn_parse(&p, s, strlen(s), t, numtok);
+  // jsmn_init(&p);
+  r = p.parse();
   if (r != status) {
     printf("status is %d, not %d\n", r, status);
     return 0;
   }
+
+  jsmntok_t *t = p.get_tokens();
 
   if (status >= 0) {
     va_start(args, numtok);
     ok = vtokeq(s, t, numtok, args);
     va_end(args);
   }
-  free(t);
+
   return ok;
 }
 

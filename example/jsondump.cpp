@@ -1,4 +1,4 @@
-#include "../jsmn.hpp"
+#include <jsmn.hpp>
 #include <errno.h>
 #include <stdio.h>
 #include <stdlib.h>
@@ -107,7 +107,7 @@ int main() {
     jslen = jslen + r;
 
   again:
-    r = p.jsmn_parse(&p, m_js, jslen, tok, tokcount);
+    r = p.parse();
     if (r < 0) {
       if (r == JSMN_ERROR_NOMEM) {
         tokcount = tokcount * 2;

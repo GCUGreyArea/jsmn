@@ -113,10 +113,12 @@ class jsmn_parser {
     ~jsmn_parser();
     void init(const char *js = "{}");
     int parse();
+
+    jsmntok_t *get_tokens() { return m_tokens; }
     jsmntok_t *get_token(int idx) { return &m_tokens[idx]; }
     size_t parsed_tokens() {return m_token_next; }
-    bool serialise(char *file_name);
-    bool deserialise(char *file_name);
+    bool serialise(const char *file_name);
+    bool deserialise(const char *file_name);
     void print_token(int idx);
 
     unsigned int last_token() {return m_token_next;}

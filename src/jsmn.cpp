@@ -391,7 +391,7 @@ void jsmn_parser::init(const char *js) {
     memset(m_tokens,0,sizeof(jsmntok_t)*m_num_tokens);
 }
 
-bool jsmn_parser::serialise(char * file_name) {
+bool jsmn_parser::serialise(const char * file_name) {
     FILE * fp = fopen(file_name,"wd");
     if(fp == NULL) {
         return false;
@@ -414,7 +414,7 @@ bool jsmn_parser::serialise(char * file_name) {
     return true;
 }
 
-bool jsmn_parser::deserialise(char * file_name) {
+bool jsmn_parser::deserialise(const char * file_name) {
     FILE * fp = fopen(file_name,"rd");
     if(fp == NULL) {
         return false;

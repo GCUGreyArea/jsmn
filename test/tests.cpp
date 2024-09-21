@@ -99,15 +99,15 @@ int test_string(void) {
 int test_partial_string(void) {
   int r;
   unsigned long i;
-  jsmn_parser p;
-  jsmntok_t tok[5];
   const char *m_js = "{\"x\": \"va\\\\ue\", \"y\": \"value y\"}";
+  jsmn_parser p(m_js);
 
-  jsmn_init(&p);
+  // jsmn_init(&p);
   for (i = 1; i <= strlen(m_js); i++) {
-    r = jsmn_parse(&p, m_js, i, tok, sizeof(tok) / sizeof(tok[0]));
+    r = p.parse();
     if (i == strlen(m_js)) {
       check(r == 5);
+      jsmntok_t * tok = p.get_tokens();
       check(tokeq(m_js, tok, 5, JSMN_OBJECT, -1, -1, 2, JSMN_STRING, "x", 1,
                   JSMN_STRING, "va\\\\ue", 0, JSMN_STRING, "y", 1, JSMN_STRING,
                   "value y", 0));
@@ -122,13 +122,14 @@ int test_partial_array(void) {
 #ifdef JSMN_STRICT
   int r;
   unsigned long i;
-  jsmn_parser p;
-  jsmntok_t tok[10];
+  
   const char *m_js = "[ 1, true, [123, \"hello\"]]";
+  jsmn_parser p;
 
-  jsmn_init(&p);
+  // jsmn_init(&p);
   for (i = 1; i <= strlen(m_js); i++) {
-    r = jsmn_parse(&p, m_js, i, tok, sizeof(tok) / sizeof(tok[0]));
+    r = p.parse();
+    jsmntok_t * tok = p.get_tokens();
     if (i == strlen(m_js)) {
       check(r == 6);
       check(tokeq(m_js, tok, 6, JSMN_ARRAY, -1, -1, 3, JSMN_PRIMITIVE, "1",
