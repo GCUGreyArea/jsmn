@@ -1,12 +1,12 @@
-NAME 	   = jsmn
+NAME 	 = jsmn
 
-BUILD	   = build
-TESTDIR    = test
-BUILD      = build
-
+CFLAGS   = -std=c11 -fPIC -Wall -g 
+CXXFLAGS = -std=c++17 -fPIC -Wall -g 
 
 # Automated code gerneation. Don't fuck with it 
-# unless you know what your doing!!!
+# unless you know what your doing!
+BUILD	= build
+TESTDIR = test
 
 TARGET = lib$(NAME).so
 
@@ -22,9 +22,6 @@ OBJ += $(patsubst %.lex.c,$(BUILD)/%.lex.o,$(LEXSRC))
 OBJ += $(patsubst %.cpp,$(BUILD)/%.o,$(CXXSRC))
 OBJ += $(patsubst %.cpp,$(BUILD)/%.o,$(CSRC))
     
-CFLAGS   = -std=c11 -fPIC -Wall -g 
-CXXFLAGS = -std=c++17 -fPIC -Wall -g 
-
 UNAME := $(shell uname)
 
 
@@ -35,9 +32,14 @@ all: $(TARGET)
 $(TARGET) : build $(OBJ)
 	$(CXX) $(CXXFLAGS) $(OBJ) -shared  -o $(BUILD)/$(TARGET)
 
+
+cmd_example: $(TARGET)
+	g++ -std=c++17 -Wall -Isrc -c example/cmd_example.cpp -o cmd_example.o
+	g++ -std=c++17 -Lbuild -ljsmn -o cmd_example cmd_example.o -Wl,-rpath,build
+	rm -f cmd_example.o
+
 build:
 	mkdir -p "$(BUILD)/src"
-
 
 src/%.tab.c: src/*.y
 	bison -d $< -o $@
@@ -52,4 +54,4 @@ $(BUILD)/%.o: %.cpp
 	$(CXX) -c $(CXXFLAGS) -c $< -o $@
 
 clean:
-	rm -rf $(BUILD)
+	rm -rf $(BUILD) cmd_example test.bin
