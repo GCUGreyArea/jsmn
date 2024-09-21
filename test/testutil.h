@@ -1,7 +1,7 @@
 #ifndef __TEST_UTIL_H__
 #define __TEST_UTIL_H__
 
-#include "../jsmn.h"
+#include "../jsmn.hpp"
 
 static int vtokeq(const char *s, jsmntok_t *t, unsigned long numtok,
                   va_list ap) {

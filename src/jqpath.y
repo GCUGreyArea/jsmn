@@ -1,5 +1,4 @@
 %{
-    // #include "jqpath.h"
     #include <stdio.h>
     extern int yylex();
     extern int depth;
@@ -47,6 +46,7 @@ expression:
 
 int yyerror(char * er) {
     printf("Error: %s\n", er);
+    return -1;
 }
 
 

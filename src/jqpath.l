@@ -7,7 +7,7 @@
     **/
 
     #include "jqpath.h"
-    #include "y.tab.h"
+    #include "jqpath.tab.h"
 
     char * capture = NULL;
     /*
@@ -80,3 +80,5 @@ void set_input_string(const char* in) {
 void end_lexical_scan(void) {
     yy_delete_buffer(YY_CURRENT_BUFFER);
 }
+
+int yywrap(){return(1);}

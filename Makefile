@@ -1,36 +1,55 @@
-# You can put your build options here
--include config.mk
+NAME 	   = jsmn
 
-test: test_default test_strict test_links test_strict_links
-test_default: test/tests.c jsmn.h
-	$(CC) $(CFLAGS) $(LDFLAGS) $< -o test/$@
-	./test/$@
-test_strict: test/tests.c jsmn.h
-	$(CC) -DJSMN_STRICT=1 $(CFLAGS) $(LDFLAGS) $< -o test/$@
-	./test/$@
-test_links: test/tests.c jsmn.h
-	$(CC) -DJSMN_PARENT_LINKS=1 $(CFLAGS) $(LDFLAGS) $< -o test/$@
-	./test/$@
-test_strict_links: test/tests.c jsmn.h
-	$(CC) -DJSMN_STRICT=1 -DJSMN_PARENT_LINKS=1 $(CFLAGS) $(LDFLAGS) $< -o test/$@
-	./test/$@
+BUILD	   = build
+TESTDIR    = test
+BUILD      = build
 
-simple_example: example/simple.c jsmn.h
-	$(CC) $(LDFLAGS) $< -o $@
 
-jsondump: example/jsondump.c jsmn.h
-	$(CC) $(LDFLAGS) $< -o $@
+# Automated code gerneation. Don't fuck with it 
+# unless you know what your doing!!!
 
-fmt:
-	clang-format -i jsmn.h test/*.[ch] example/*.[ch]
+TARGET = lib$(NAME).so
 
-lint:
-	clang-tidy jsmn.h --checks='*'
+# Yacc file go first because they generat headers
+YACSRC = $(patsubst %.y,%.tab.c,$(wildcard src/*.y))
+LEXSRC = $(patsubst %.l,%.lex.c,$(wildcard src/*.l))
+CXXSRC = $(wildcard src/*.cpp)
+CSRC   = $(wildcard src/*.c)
+
+# YACC goes first!
+OBJ := $(patsubst %.tab.c,$(BUILD)/%.tab.o,$(YACSRC))
+OBJ += $(patsubst %.lex.c,$(BUILD)/%.lex.o,$(LEXSRC))
+OBJ += $(patsubst %.cpp,$(BUILD)/%.o,$(CXXSRC))
+OBJ += $(patsubst %.cpp,$(BUILD)/%.o,$(CSRC))
+    
+CFLAGS   = -std=c11 -fPIC -Wall -g 
+CXXFLAGS = -std=c++17 -fPIC -Wall -g 
+
+UNAME := $(shell uname)
+
+
+# Force rebuild of flex and bison files each time
+all: $(TARGET)
+	rm -f src/*.tab.h
+
+$(TARGET) : build $(OBJ)
+	$(CXX) $(CXXFLAGS) $(OBJ) -shared  -o $(BUILD)/$(TARGET)
+
+build:
+	mkdir -p "$(BUILD)/src"
+
+
+src/%.tab.c: src/*.y
+	bison -d $< -o $@
+
+src/%.lex.c: src/%.l
+	flex -o $@ $<
+
+$(BUILD)/%.o: %.c
+	$(CC) -c $(CFLAGS) $< -o $@
+
+$(BUILD)/%.o: %.cpp
+	$(CXX) -c $(CXXFLAGS) -c $< -o $@
 
 clean:
-	rm -f *.o example/*.o
-	rm -f simple_example
-	rm -f jsondump
-
-.PHONY: clean test
-
+	rm -rf $(BUILD)

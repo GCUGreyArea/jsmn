@@ -77,8 +77,8 @@ class jsmn_parser {
     // Default tokens array size
     static constexpr unsigned int def_size = 1024;
 
-    unsigned int m_pos;        // offset in the JSON string
-    unsigned int m_token_next; // next token to allocate
+    size_t m_pos;        // offset in the JSON string
+    size_t m_token_next; // next token to allocate
     int m_toksuper;      // superior token node, e.g. parent object or array
     jsmntok_t *m_tokens; // Array of tokens
     unsigned int m_num_tokens; // Number of tokens in the array
@@ -86,7 +86,8 @@ class jsmn_parser {
     // String to parse
     size_t m_length;  // Length of JSON string
     char *m_js;       // NULL terminated JSON string
-    unsigned int m_mull;
+    size_t m_mull;    // When we ru out pf tokens, grow by * m_mull
+    size_t m_depth;   // Depth into the structure
 
   protected:
     jsmntok_t *jsmn_alloc_token();
@@ -96,20 +97,21 @@ class jsmn_parser {
     int jsmn_parse_string();
 
   public:
-    jsmn_parser(unsigned int mull = 2, const char *js = "{}")
-        : m_mull(mull), 
-          m_pos(0), 
+    jsmn_parser(const char *js = "{}",unsigned int mull = 2)
+        : m_pos(0),
           m_token_next(0), 
           m_toksuper(-1),
+          m_tokens(new jsmntok_t[def_size]),
+          m_num_tokens(def_size), 
           m_length(strlen(js)), 
           m_js(new char[m_length+1]),
-          m_num_tokens(def_size), 
-          m_tokens(new jsmntok_t[def_size]) {
+          m_mull(mull),  
+          m_depth(0) {
             strcpy(m_js,js);
     }
 
     ~jsmn_parser();
-    void init(const char *js);
+    void init(const char *js = "{}");
     int parse();
     jsmntok_t *get_token(int idx) { return &m_tokens[idx]; }
     size_t parsed_tokens() {return m_token_next; }

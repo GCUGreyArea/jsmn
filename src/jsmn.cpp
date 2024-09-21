@@ -198,6 +198,7 @@ int jsmn_parser::parse() {
         case '{':
         case '[':
             count++;
+            m_depth++;
             if (m_tokens == NULL) {
                 break;
             }
@@ -224,6 +225,7 @@ int jsmn_parser::parse() {
             break;
         case '}':
         case ']':
+            m_depth--;
             if (m_tokens == NULL) {
                 break;
             }
@@ -379,7 +381,6 @@ void jsmn_parser::init(const char *js) {
     m_token_next = 0;
     m_toksuper = -1;
 
-    size_t len = m_length;
     m_length = strlen(js);
     delete [] m_js;
     m_js = new char[m_length+1];
@@ -420,20 +421,29 @@ bool jsmn_parser::deserialise(char * file_name) {
     }
 
     // Retrieve the string
-    fread(&m_length,sizeof(m_length),1,fp);
-    if(m_length == 0) {
+    size_t size = fread(&m_length,sizeof(m_length),1,fp);
+    if(m_length == 0 || size == 0) {
         return false;
     }
     delete [] m_js;
     m_js = new char[m_length+1];
-    fread(m_js,sizeof(char),m_length,fp);
+    size = fread(m_js,sizeof(char),m_length,fp);
+    if(size ==0) {
+        goto error;
+    }
     m_js[m_length] = '\0';
 
     // Read back the position
-    fread(&m_pos,sizeof(m_pos),1,fp);
+    size = fread(&m_pos,sizeof(m_pos),1,fp);
+    if(size == 0) {
+        goto error;
+    }
 
     // Read in the last token idex
-    fread(&m_token_next,sizeof(m_token_next),1,fp);
+    size = fread(&m_token_next,sizeof(m_token_next),1,fp);
+    if(size == 0) {
+        goto error;
+    }
 
     // Set up the token array if we need to
     if(m_token_next-1 > m_num_tokens) {
@@ -444,10 +454,19 @@ bool jsmn_parser::deserialise(char * file_name) {
         m_num_tokens = m_token_next+1;
     }
 
-    fread(m_tokens,sizeof(struct jsmntok),m_token_next,fp);
-    fclose(fp);
+    size = fread(m_tokens,sizeof(struct jsmntok),m_token_next,fp);
+    if(size == 0) {
+        goto error;
+    }
 
+    fclose(fp);
     return true;
+
+
+error:
+    fclose(fp);
+    delete [] m_js;
+    return false;
 }
 
 void jsmn_parser::print_token(int idx) {
