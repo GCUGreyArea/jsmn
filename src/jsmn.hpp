@@ -30,6 +30,7 @@
 #include <string>
 #include <stddef.h>
 #include <string.h>
+#include "jqpath.h"
 
 /**
  * JSON type identifier. Basic types are:
