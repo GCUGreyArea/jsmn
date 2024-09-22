@@ -1,14 +1,12 @@
 NAME 	 = jsmn
 
-CFLAGS   = -std=c11 -fPIC -Wall -g 
-CXXFLAGS = -std=c++17 -fPIC -Wall -g 
+CFLAGS   = -std=c11 -Wall -g -fPIC
+CXXFLAGS = -std=c++17 -Wall -g -fPIC
 
 # Automated code gerneation. Don't fuck with it 
 # unless you know what your doing!
-BUILD	= build
-TESTDIR = test
-
-TARGET = lib$(NAME).so
+TARGET  = lib$(NAME).so
+TEST	= test_$(NAME)
 
 # Yacc file go first because they generat headers
 YACSRC = $(patsubst %.y,%.tab.c,$(wildcard src/*.y))
@@ -17,29 +15,52 @@ CXXSRC = $(wildcard src/*.cpp)
 CSRC   = $(wildcard src/*.c)
 
 # YACC goes first!
-OBJ := $(patsubst %.tab.c,$(BUILD)/%.tab.o,$(YACSRC))
-OBJ += $(patsubst %.lex.c,$(BUILD)/%.lex.o,$(LEXSRC))
-OBJ += $(patsubst %.cpp,$(BUILD)/%.o,$(CXXSRC))
-OBJ += $(patsubst %.cpp,$(BUILD)/%.o,$(CSRC))
-    
-UNAME := $(shell uname)
+OBJ := $(patsubst %.tab.c,build/%.tab.o,$(YACSRC))
+OBJ += $(patsubst %.lex.c,build/%.lex.o,$(LEXSRC))
+OBJ += $(patsubst %.cpp,build/%.o,$(CXXSRC))
+OBJ += $(patsubst %.c,build/%.o,$(CSRC))
 
+# Test code
+TESTCXXSRC := $(wildcard test/*.cpp)
+TESTCSRC   := $(wildcard test/*.c)
+TESTOBJ	   := $(patsubst %.cpp,build/%.o,$(TESTCXXSRC))
+TESTOBJ	   += $(patsubst %.c,build/%.o,$(TESTCSRC))
+
+BUILDTARGET = build/$(TARGET)
+TESTTARGET  = build/$(TEST)
 
 # Force rebuild of flex and bison files each time
-all: $(TARGET)
-	rm -f src/*.tab.h
+all: $(BUILDTARGET)
+	rm -f src/*.tab.* src/*.lex.*
 
-$(TARGET) : build $(OBJ)
-	$(CXX) $(CXXFLAGS) $(OBJ) -shared  -o $(BUILD)/$(TARGET)
+test: $(BUILDTARGET) $(TESTTARGET)
+	rm -f src/*.tab.* src/*.lex.*
 
+# Dynamic Build Rules
+$(BUILDTARGET) : build $(OBJ)
+	$(CXX) $(CXXFLAGS) -fPIC -Lbuild -Isrc $(OBJ) -shared  -o $(BUILDTARGET)
 
-cmd_example: $(TARGET)
+$(TESTTARGET): build $(TESTOBJ)
+	$(CXX) $(CXXFLAGS) -Lbuild -Isrc -Itest $(TESTOBJ) -ljsmn -lgtest -lpthread -lglog -o $(TESTTARGET) -Wl,-rpath,build
+
+cmd_example: $(BUILDTARGET)
 	g++ -std=c++17 -Wall -Isrc -c example/cmd_example.cpp -o cmd_example.o
 	g++ -std=c++17 -Lbuild -ljsmn -o cmd_example cmd_example.o -Wl,-rpath,build
 	rm -f cmd_example.o
 
+jsondump: $(BUILDTARGET)
+	g++ -std=c++17 -g -Wall -Isrc -c example/jsondump.cpp -o jsondump.o
+	g++ -std=c++17 -g -Lbuild -ljsmn -o jsondump jsondump.o -Wl,-rpath,build
+	rm -f jsondump.o
+
+simple: $(BUILDTARGET)
+	g++ -std=c++17 -g -Wall -Isrc -c example/simple.cpp -o simple.o
+	g++ -std=c++17 -g -Lbuild -ljsmn -o simple simple.o -Wl,-rpath,build
+	rm -f simple.o
+
 build:
-	mkdir -p "$(BUILD)/src"
+	mkdir -p build/src
+	mkdir -p build/test
 
 src/%.tab.c: src/*.y
 	bison -d $< -o $@
@@ -47,11 +68,11 @@ src/%.tab.c: src/*.y
 src/%.lex.c: src/%.l
 	flex -o $@ $<
 
-$(BUILD)/%.o: %.c
-	$(CC) -c $(CFLAGS) $< -o $@
+build/%.o: %.c
+	$(CC) -c $(CFLAGS) -Lbuild -Isrc -Itest $< -o $@
 
-$(BUILD)/%.o: %.cpp
-	$(CXX) -c $(CXXFLAGS) -c $< -o $@
+build/%.o: %.cpp
+	$(CXX) -c $(CXXFLAGS) -Lbuild -Isrc -Itest -c $< -o $@
 
 clean:
-	rm -rf $(BUILD) cmd_example test.bin
+	rm -rf build cmd_example jsondump simple test.bin tests

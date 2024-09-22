@@ -8,7 +8,7 @@
             "name": "(gdb) Launch",
             "type": "cppdbg",
             "request": "launch",
-            "program": "${workspaceFolder}/jsmn",
+            "program": "${workspaceFolder}/build/test_jsmn",
             "args": ["{\"name\":\"Barry\",\"job\":\"Lead Cyber Engineer\"}"],
             "stopAtEntry": false,
             "cwd": "${workspaceFolder}",

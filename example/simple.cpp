@@ -1,4 +1,4 @@
-#include "../jsmn.hpp"
+#include <jsmn.hpp>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
@@ -23,10 +23,9 @@ static int jsoneq(const char *json, jsmntok_t *tok, const char *s) {
 int main() {
   int i;
   int r;
-  jsmn_parser p;
-  // jsmntok_t t[128]; /* We expect no more than 128 tokens */
+  jsmn_parser p(JSON_STRING.c_str());
 
-  p.init(JSON_STRING.c_str());
+
   r = p.parse();
   if (r < 0) {
     printf("Failed to parse JSON: %d\n", r);

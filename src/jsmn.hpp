@@ -27,6 +27,7 @@
 #define JSMN_STRICT 1
 #define JSMN_PARENT_LINKS 1
 
+#include <string>
 #include <stddef.h>
 #include <string.h>
 
@@ -97,6 +98,7 @@ class jsmn_parser {
     int jsmn_parse_string();
 
   public:
+    jsmn_parser(std::string str, unsigned int mull) : jsmn_parser(str.c_str(),mull) {};
     jsmn_parser(const char *js = "{}",unsigned int mull = 2)
         : m_pos(0),
           m_token_next(0), 
