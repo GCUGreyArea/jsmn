@@ -31,10 +31,10 @@ TESTTARGET  = build/$(TEST)
 
 # Force rebuild of flex and bison files each time
 all: $(BUILDTARGET)
-	rm -f src/*.tab.* src/*.lex.*
+# 	rm -f src/*.tab.* src/*.lex.*
 
 test: $(BUILDTARGET) $(TESTTARGET)
-	rm -f src/*.tab.* src/*.lex.*
+#	rm -f src/*.tab.* src/*.lex.*
 
 # Dynamic Build Rules
 $(BUILDTARGET) : build $(OBJ)
@@ -76,3 +76,4 @@ build/%.o: %.cpp
 
 clean:
 	rm -rf build cmd_example jsondump simple test.bin tests
+
