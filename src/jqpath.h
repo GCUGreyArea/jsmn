@@ -1,24 +1,16 @@
 #ifndef JQ_DEFS
 #define JQ_DEFS
 
-typedef enum {
-    JQ_STRING,
-    JQ_INT,
-    JQ_FLOAT,
-    JQ_ARRAY,
-    JQ_OBJ
-} jq_type;
+#ifdef __cplusplus
+extern "C" {
+#endif
 
-typedef struct jq_def {
-    unsigned int depth;
-    jq_type type;
-    char * string;
-    union {
-        int num_int;
-        float num_float;
-        const char * string;
-    } jqpath;
-    unsigned hash;
-} jq_def;
+#include "jqpath.tab.h"
+
+int jqpath_parse_string(const char * str);
+
+#ifdef __cplusplus
+}
+#endif
 
 #endif//JQ_DEFS
