@@ -20,7 +20,7 @@ TEST(JQParser,testJQParser) {
     ret = jqpath_parse_string(str);
     ASSERT_EQ(ret,0);
 
-    str = ".name[001].value = 100.12";
+    str = ".name[1].value = 100.12";
     ret = jqpath_parse_string(str);
     ASSERT_EQ(ret,0);
 
