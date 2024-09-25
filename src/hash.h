@@ -1,6 +1,6 @@
 #ifndef HASH_H
 #define HASH_H
-#if __cplusplus // but C++ programs need to know that no name mangling should occur
+#if __cplusplus // C++ programs need to know that no name mangling should occur
 extern "C" {
 #endif
 
