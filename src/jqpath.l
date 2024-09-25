@@ -7,7 +7,6 @@
     **/
 
     #include "jqpath.h"
-    #include "jqpath.tab.h"
 
     char * capture = NULL;
     /*
