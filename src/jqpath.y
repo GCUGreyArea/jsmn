@@ -59,7 +59,7 @@ int yyerror(char * er) {
 void set_input_string(const char* in);
 void end_lexical_scan(void);
 
-/* This function parses a string */
+/* This function parses a string using yyparse */
 int jqpath_parse_string(const char* in) {
   set_input_string(in);
   lex_depth = 0;
