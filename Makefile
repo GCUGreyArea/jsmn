@@ -34,7 +34,7 @@ all: $(BUILDTARGET)
 # 	rm -f src/*.tab.* src/*.lex.*
 
 test: $(BUILDTARGET) $(TESTTARGET)
-#	rm -f src/*.tab.* src/*.lex.*
+	$(TESTTARGET)
 
 # Dynamic Build Rules
 $(BUILDTARGET) : build $(OBJ)
