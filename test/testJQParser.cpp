@@ -30,6 +30,7 @@ TEST(JQParser,testJQParser) {
 
 TEST(JQParser,testJQDepth) {
     struct jqpath* path = jqpath_get_path();
+    struct jqpath saved = {};
 
     // We also want to insure that each path results in a unique hash value
     std::set<unsigned int> ints;
@@ -69,4 +70,17 @@ TEST(JQParser,testJQDepth) {
     ASSERT_EQ(path->depth,6);
     single = ints.emplace(path->hash);
     ASSERT_TRUE(single.second);
+
+    saved = *path;
+
+    // The values should numerically be equivolet
+    str = ".name[00001].value.three[].four";
+    ret = jqpath_parse_string(str);
+    ASSERT_EQ(ret,0);
+    ASSERT_EQ(path->depth,6);
+    single = ints.emplace(path->hash);
+    ASSERT_FALSE(single.second);
+
+    ASSERT_EQ(saved.depth,path->depth);
+    ASSERT_EQ(saved.hash,path->hash);
 }
