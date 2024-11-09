@@ -3,6 +3,7 @@
 
 #include <stdio.h>
 #include <cstring>
+#include <stack>
 
 jsmn_parser::~jsmn_parser() {
     delete[] m_tokens;
@@ -501,3 +502,53 @@ void jsmn_parser::print_token(int idx) {
         printf("value: %s\n", buff);
         delete [] buff;
 }
+/**
+ * @brief Render a set of tokens into a set of jq paths
+ * The design of this detailed in [Render design](./docs/render-design.md)
+ * 
+ * @param depth 
+ * @param token 
+ */
+unsigned int jsmn_parser::render(int depth, unsigned int& token) {
+    while(token < m_num_tokens) {
+        switch(m_tokens[token].type) {
+            case JSMN_OBJECT:
+                token++; // move to the next token
+                token = render(depth+1,token);
+                break;
+
+            case JSMN_ARRAY:
+                token++;
+                render(depth+1,token);
+                break;
+            
+            case JSMN_STRING:
+                int size = m_tokens[m_tokens[token].parent].size;
+                jsmntype_t type = m_tokens[m_tokens[token].parent].type;
+                switch(type) {
+                    case JSMN_OBJECT:
+                        break;
+                    case JSMN_ARRAY:
+                        for(unsigned int idx=0;idx < size; idx++) {
+
+                        }
+                        break;
+                    default:
+                        exit(-1);
+                }
+                break;
+            
+            case JSMN_PRIMITIVE:
+                break;
+
+            default:
+                break;
+        }
+    }
+}
+
+void jsmn_parser::render() {
+    unsigned int token = 0;
+    render(0,token);
+}
+

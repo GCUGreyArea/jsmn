@@ -32,6 +32,8 @@
 #include <string.h>
 #include "jqpath.h"
 
+#include <map>
+
 /**
  * JSON type identifier. Basic types are:
  * 	o Object
@@ -70,6 +72,18 @@ typedef struct jsmntok {
     int parent;
 } jsmntok_t;
 
+struct span {
+    int start;
+    int end;
+};
+
+struct path
+{
+    int depth;
+    struct span string;
+};
+
+
 /**
  * JSON parser. Contains an array of token blocks available. Also stores
  * the string being parsed now and current position in that string.
@@ -90,6 +104,7 @@ class jsmn_parser {
     char *m_js;       // NULL terminated JSON string
     size_t m_mull;    // When we ru out pf tokens, grow by * m_mull
     size_t m_depth;   // Depth into the structure
+    std::map<unsigned int,struct path> m_paths; // The value for each path
 
   protected:
     jsmntok_t *jsmn_alloc_token();
@@ -97,6 +112,8 @@ class jsmn_parser {
                          jsmntype_t type);
     int jsmn_parse_primitive();
     int jsmn_parse_string();
+    unsigned int render(int depth, unsigned int& token);
+
 
   public:
     jsmn_parser(std::string str, unsigned int mull) : jsmn_parser(str.c_str(),mull) {};
@@ -125,6 +142,7 @@ class jsmn_parser {
     void print_token(int idx);
 
     unsigned int last_token() {return m_token_next;}
+    void render();
 };
 
 #endif /* JSMN_H */
