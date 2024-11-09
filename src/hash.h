@@ -4,8 +4,8 @@
 extern "C" {
 #endif
 
-unsigned hash(const char* str, unsigned len);
-unsigned merge_hash(unsigned left, unsigned right);
+unsigned int hash(const char* str, unsigned len);
+unsigned int merge_hash(unsigned left, unsigned right);
 
 #if __cplusplus
 }               // end the extern "C" block

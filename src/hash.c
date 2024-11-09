@@ -1,8 +1,8 @@
-unsigned hash(const char* str, unsigned len)
+unsigned int hash(const char* str, unsigned int len)
 {
-   const unsigned fnv_prime = 0x811C9DC5;
-   unsigned hash = 0;
-   unsigned i    = 0;
+   const unsigned int fnv_prime = 0x811C9DC5;
+   unsigned int hash = 0;
+   unsigned int i    = 0;
 
    for (i = 0; i < len; str++, i++)
    {
@@ -13,7 +13,7 @@ unsigned hash(const char* str, unsigned len)
    return hash;
 }
 
-unsigned merge_hash(unsigned left, unsigned right)
+unsigned int merge_hash(unsigned int left, unsigned int right)
 {
     return (left * 0x811C9DC5) ^ right;
 }
