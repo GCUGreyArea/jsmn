@@ -80,7 +80,8 @@ struct span {
 struct path
 {
     int depth;
-    struct span string;
+
+    jsmntok token;
 };
 
 
@@ -112,7 +113,7 @@ class jsmn_parser {
                          jsmntype_t type);
     int jsmn_parse_primitive();
     int jsmn_parse_string();
-    unsigned int render(int depth, unsigned int& token);
+    void render(int depth, unsigned int hash, unsigned int& token);
 
 
   public:
