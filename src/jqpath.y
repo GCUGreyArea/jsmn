@@ -1,11 +1,16 @@
 %{
     #include <stdio.h>
+    #include <string.h>
+    #include "jqpath.h"
+    #include "hash.h"
     extern int yylex();
-    extern int lex_depth;
     extern int intval;
+    extern int last_int_len;
     extern float floatval;
     extern char * strval;
+    extern struct jqpath path;
     int yyerror(char * er);
+    void add_index_to_path(int idx,int len);
 %}
 
 %token  STRING;
@@ -25,6 +30,7 @@
 */
 path: 
     complete_path expression {/* printf("parse-PATH EXPRESSION\n"); */}
+  | complete_path            {}
 ;
 
 complete_path: 
@@ -34,16 +40,16 @@ complete_path:
 ;
 
 array_def: 
-  OPEN_ARR CLOSE_ARR {lex_depth++; /*printf("empty array: lex_depth=%d\n",lex_depth); */}
-| OPEN_ARR INT CLOSE_ARR { /*printf("int array def: %d: lex_depth=%d\n", intval, lex_depth);*/}
+  OPEN_ARR CLOSE_ARR      { /*printf("empty array: lex_depth=%d\n",lex_depth); */}
+| OPEN_ARR INT CLOSE_ARR  {add_index_to_path(intval,last_int_len);}
 
 expression: 
-  EQUALS INT        { /* printf("INT EXP: %d\n", intval); */}
-| EQUALS FLOAT      { /*printf("FLOAT EXP: %f\n", floatval);*/ }
-| EQUALS STRING     { /*printf("STRING EXP: %s\n", strval);*/ }
-| NOT_EQUALS INT    { /*printf("INT NOT EXP: %d\n", intval); */}
-| NOT_EQUALS FLOAT  { /*printf("FLOAT NOT EXP: %f\n", floatval);*/ }
-| NOT_EQUALS STRING { /*printf("STRING NOT EXP: %s\n", strval);*/ }
+  EQUALS INT        { }
+| EQUALS FLOAT      { }
+| EQUALS STRING     { }
+| NOT_EQUALS INT    { }
+| NOT_EQUALS FLOAT  { }
+| NOT_EQUALS STRING { }
 ;
 
 
@@ -54,16 +60,26 @@ int yyerror(char * er) {
     return -1;
 }
 
+void add_index_to_path(int idx, int idx_len) {
+    char * val = malloc(idx_len + 1);
+    sprintf(val,"%i",idx);
+    path.hash = merge_hash(path.hash,hash(val,strlen(val)));
+    free(val);
+}
 
 /* Declarations */
 void set_input_string(const char* in);
 void end_lexical_scan(void);
 
-/* This function parses a string using yyparse */
+/* This function parses a string using yyparse. 
+   Note that this is not reentrant */
 int jqpath_parse_string(const char* in) {
   set_input_string(in);
-  lex_depth = 0;
   int rv = yyparse();
   end_lexical_scan();
   return rv;
+}
+
+struct jqpath * jqpath_get_path() {
+  return &path;
 }
