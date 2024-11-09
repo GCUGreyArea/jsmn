@@ -5,11 +5,11 @@
     "version": "0.2.0",
     "configurations": [
         {
-            "name": "(gdb) Launch",
+            "name": "(gdb) debug test",
             "type": "cppdbg",
             "request": "launch",
             "program": "${workspaceFolder}/build/test_jsmn",
-            "args": ["{\"name\":\"Barry\",\"job\":\"Lead Cyber Engineer\"}"],
+            "args": [],
             "stopAtEntry": false,
             "cwd": "${workspaceFolder}",
             "environment": [],
