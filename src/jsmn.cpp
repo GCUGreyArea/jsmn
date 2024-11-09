@@ -519,11 +519,11 @@ unsigned int jsmn_parser::render(int depth, unsigned int& token) {
 
             case JSMN_ARRAY:
                 token++;
-                render(depth+1,token);
+                token = render(depth+1,token);
                 break;
             
             case JSMN_STRING: {
-                    int size = m_tokens[m_tokens[token].parent].size;
+                    // unsigned int size = m_tokens[m_tokens[token].parent].size;
                     jsmntype_t type = m_tokens[m_tokens[token].parent].type;
                     switch(type) {
                         case JSMN_OBJECT:
@@ -543,6 +543,8 @@ unsigned int jsmn_parser::render(int depth, unsigned int& token) {
                 break;
         }
     }
+
+    return token;
 }
 
 void jsmn_parser::render() {
