@@ -522,19 +522,17 @@ unsigned int jsmn_parser::render(int depth, unsigned int& token) {
                 render(depth+1,token);
                 break;
             
-            case JSMN_STRING:
-                int size = m_tokens[m_tokens[token].parent].size;
-                jsmntype_t type = m_tokens[m_tokens[token].parent].type;
-                switch(type) {
-                    case JSMN_OBJECT:
-                        break;
-                    case JSMN_ARRAY:
-                        for(unsigned int idx=0;idx < size; idx++) {
-
-                        }
-                        break;
-                    default:
-                        exit(-1);
+            case JSMN_STRING: {
+                    int size = m_tokens[m_tokens[token].parent].size;
+                    jsmntype_t type = m_tokens[m_tokens[token].parent].type;
+                    switch(type) {
+                        case JSMN_OBJECT:
+                            break;
+                        case JSMN_ARRAY:
+                            break;
+                        default:
+                            exit(-1);
+                    }
                 }
                 break;
             
