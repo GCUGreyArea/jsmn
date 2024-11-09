@@ -61,6 +61,8 @@
         "thread": "cpp",
         "variant": "cpp",
         "codecvt": "cpp",
-        "iomanip": "cpp"
+        "iomanip": "cpp",
+        "*.inc": "c",
+        "cinttypes": "cpp"
     }
 }
