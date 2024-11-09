@@ -1,9 +1,12 @@
 
 #include "jsmn.hpp"
+#include "kv_state.h"
+#include "hash.h"
 
 #include <stdio.h>
 #include <cstring>
 #include <stack>
+#include <iostream>
 
 jsmn_parser::~jsmn_parser() {
     delete[] m_tokens;
@@ -509,46 +512,72 @@ void jsmn_parser::print_token(int idx) {
  * @param depth 
  * @param token 
  */
-unsigned int jsmn_parser::render(int depth, unsigned int& token) {
+
+void jsmn_parser::render(int depth, unsigned int hash_value, unsigned int& token) {    
+
+    kv_state kv = kv_state::START;
+    
     while(token < m_num_tokens) {
         switch(m_tokens[token].type) {
-            case JSMN_OBJECT:
-                token++; // move to the next token
-                token = render(depth+1,token);
-                break;
+            case JSMN_OBJECT: {
+                unsigned int size = m_tokens[m_tokens[token].parent].size;
+                for(unsigned int idx=0;idx<size; idx++) { 
+                    token++; // move to the next token
 
-            case JSMN_ARRAY:
-                token++;
-                token = render(depth+1,token);
-                break;
-            
-            case JSMN_STRING: {
-                    // unsigned int size = m_tokens[m_tokens[token].parent].size;
-                    jsmntype_t type = m_tokens[m_tokens[token].parent].type;
-                    switch(type) {
+                    switch(m_tokens[token].type) {
                         case JSMN_OBJECT:
+                            render(depth+1,hash_value,token);
                             break;
-                        case JSMN_ARRAY:
-                            break;
+                        case JSMN_ARRAY: {
+                            
+                        }
+
                         default:
-                            exit(-1);
+                            break;
                     }
+                    
                 }
                 break;
-            
-            case JSMN_PRIMITIVE:
+            }
+
+            case JSMN_ARRAY:
+                kv = kv_state::START;
+                token++;
+                render(depth+1,hash_value,token);
                 break;
+            
+            case JSMN_STRING:
+                    kv++;
+                    if(kv == kv_state::VALUE) {
+                        // We need to add this to the path value
+                    }
+                    else if(kv == kv_state::KEY) {
+                        // We need to add the hash to our hash 
+                        int len = m_tokens[token].end - m_tokens[token].start;
+                        hash_value = merge_hash(hash(&m_js[m_tokens[token].start],len),hash_value);
+                    }
+                break;
+            
+            case JSMN_PRIMITIVE: {
+
+                }
+                break;
+
+            case JSMN_UNDEFINED: 
+                std::cerr << "UNdefined token" << std::endl;
+                abort();
+                break; 
 
             default:
                 break;
         }
     }
-
-    return token;
 }
 
 void jsmn_parser::render() {
     unsigned int token = 0;
-    render(0,token);
+    render(0,0,token);
 }
 
+
+// enum clas kv_state
