@@ -63,6 +63,9 @@
         "codecvt": "cpp",
         "iomanip": "cpp",
         "*.inc": "c",
-        "cinttypes": "cpp"
+        "cinttypes": "cpp",
+        "string.h": "c",
+        "jqpath.h": "c",
+        "hash.h": "c"
     }
 }
