@@ -28,11 +28,10 @@
 #define JSMN_PARENT_LINKS 1
 
 #include <string>
-#include <stddef.h>
-#include <string.h>
+#include <map>
+
 #include "jqpath.h"
 
-#include <map>
 
 /**
  * JSON type identifier. Basic types are:
@@ -80,8 +79,9 @@ struct span {
 struct path
 {
     int depth;
-
-    jsmntok token;
+	unsigned int hash_path;
+	
+    jsmntok * value_token;
 };
 
 
@@ -101,8 +101,8 @@ class jsmn_parser {
     unsigned int m_num_tokens; // Number of tokens in the array
 
     // String to parse
+    std::string m_js; // NULL terminated JSON string
     size_t m_length;  // Length of JSON string
-    char *m_js;       // NULL terminated JSON string
     size_t m_mull;    // When we ru out pf tokens, grow by * m_mull
     size_t m_depth;   // Depth into the structure
     std::map<unsigned int,struct path> m_paths; // The value for each path
@@ -124,12 +124,11 @@ class jsmn_parser {
           m_toksuper(-1),
           m_tokens(new jsmntok_t[def_size]),
           m_num_tokens(def_size), 
-          m_length(strlen(js)), 
-          m_js(new char[m_length+1]),
+          // m_length(strlen(js)), 
+          m_js(js),
+          m_length(m_js.length()),
           m_mull(mull),  
-          m_depth(0) {
-            strcpy(m_js,js);
-    }
+          m_depth(0) {}
 
     ~jsmn_parser();
     void init(const char *js = "{}");
@@ -141,6 +140,7 @@ class jsmn_parser {
     bool serialise(const char *file_name);
     bool deserialise(const char *file_name);
     void print_token(int idx);
+    std::string get_json() {return m_js;} 
 
     unsigned int last_token() {return m_token_next;}
     void render();

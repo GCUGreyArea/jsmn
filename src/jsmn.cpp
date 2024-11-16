@@ -1,20 +1,17 @@
+#include <iostream>
+#include <stack>
+
+#include <cstring>
 
 #include "jsmn.hpp"
-#include "kv_state.h"
 #include "hash.h"
-
-#include <stdio.h>
-#include <cstring>
-#include <stack>
-#include <iostream>
+#include "kv_state.h"
 
 jsmn_parser::~jsmn_parser() {
     delete[] m_tokens;
     m_tokens = nullptr;
     m_num_tokens = 0;
 
-    delete [] m_js;
-    m_js = nullptr;
     m_length = 0;
 }
 
@@ -385,32 +382,27 @@ void jsmn_parser::init(const char *js) {
     m_token_next = 0;
     m_toksuper = -1;
 
-    m_length = strlen(js);
-    delete [] m_js;
-    m_js = new char[m_length+1];
-
-    strcpy(m_js,js);
-    m_js[m_length] = '\0';
-
-    memset(m_tokens,0,sizeof(jsmntok_t)*m_num_tokens);
+    m_js = js;
+    m_length = m_js.length();
+    std::memset(m_tokens, 0, sizeof(jsmntok_t) * m_num_tokens);
 }
 
-bool jsmn_parser::serialise(const char * file_name) {
-    FILE * fp = fopen(file_name,"wd");
-    if(fp == NULL) {
+bool jsmn_parser::serialise(const char *file_name) {
+    FILE *fp = fopen(file_name, "wd");
+    if (fp == NULL) {
         return false;
     }
 
-    // Save the string and length 
-    fwrite(&m_length,sizeof(m_length),1,fp);
-    fwrite(m_js,sizeof(char),m_length,fp);
-    fwrite(&m_pos, sizeof(m_pos),1,fp);
+    // Save the string and length
+    fwrite(&m_length, sizeof(m_length), 1, fp);
+    fwrite(m_js.data(), sizeof(char), m_length, fp);
+    fwrite(&m_pos, sizeof(m_pos), 1, fp);
 
     // Write out the last token index
-    fwrite(&m_token_next,sizeof(m_token_next),1,fp);
+    fwrite(&m_token_next, sizeof(m_token_next), 1, fp);
 
-    // Write the number of objects first 
-    fwrite(m_tokens,sizeof(struct jsmntok),m_token_next,fp);
+    // Write the number of objects first
+    fwrite(m_tokens, sizeof(struct jsmntok), m_token_next, fp);
 
     // Close the file and exit
     fclose(fp);
@@ -418,166 +410,176 @@ bool jsmn_parser::serialise(const char * file_name) {
     return true;
 }
 
-bool jsmn_parser::deserialise(const char * file_name) {
-    FILE * fp = fopen(file_name,"rd");
-    if(fp == NULL) {
+/**
+ * @brief Deserialise a previously serialised JSON structure
+ *
+ * @param file_name
+ * @return true
+ * @return false
+ */
+bool jsmn_parser::deserialise(const char *file_name) {
+    FILE *fp = fopen(file_name, "rd");
+    if (fp == NULL) {
         return false;
     }
 
     // Retrieve the string
-    size_t size = fread(&m_length,sizeof(m_length),1,fp);
-    if(m_length == 0 || size == 0) {
+    size_t size = fread(&m_length, sizeof(m_length), 1, fp);
+    if (m_length == 0 || size == 0) {
         return false;
     }
-    delete [] m_js;
-    m_js = new char[m_length+1];
-    size = fread(m_js,sizeof(char),m_length,fp);
-    if(size ==0) {
+    
+    // Read in the string 
+    char *js = new char[m_length + 1];
+    size = fread(js, sizeof(char), m_length, fp);
+    if (size == 0) {
         goto error;
     }
-    m_js[m_length] = '\0';
+    js[m_length] = '\0';
+
+    m_js = js;
+    delete[] js;
 
     // Read back the position
-    size = fread(&m_pos,sizeof(m_pos),1,fp);
-    if(size == 0) {
+    size = fread(&m_pos, sizeof(m_pos), 1, fp);
+    if (size == 0) {
         goto error;
     }
 
     // Read in the last token idex
-    size = fread(&m_token_next,sizeof(m_token_next),1,fp);
-    if(size == 0) {
+    size = fread(&m_token_next, sizeof(m_token_next), 1, fp);
+    if (size == 0) {
         goto error;
     }
 
     // Set up the token array if we need to
-    if(m_token_next-1 > m_num_tokens) {
-        if(m_tokens != nullptr) {
-            delete [] m_tokens;
+    if (m_token_next - 1 > m_num_tokens) {
+        if (m_tokens != nullptr) {
+            delete[] m_tokens;
         }
-        m_tokens = new jsmntok_t[m_token_next+1];
-        m_num_tokens = m_token_next+1;
+        m_tokens = new jsmntok_t[m_token_next + 1];
+        m_num_tokens = m_token_next + 1;
     }
 
-    size = fread(m_tokens,sizeof(struct jsmntok),m_token_next,fp);
-    if(size == 0) {
+    size = fread(m_tokens, sizeof(struct jsmntok), m_token_next, fp);
+    if (size == 0) {
         goto error;
     }
 
     fclose(fp);
     return true;
 
-
 error:
     fclose(fp);
-    delete [] m_js;
     return false;
 }
 
 void jsmn_parser::print_token(int idx) {
-    jsmntok_t * t = &m_tokens[idx];
+    jsmntok_t *t = &m_tokens[idx];
 
-    switch(t->type) {
-        case  JSMN_UNDEFINED: 
-            printf("type: undefined\n");
-            break;
-        case JSMN_OBJECT:
-            printf("type: object\n");
-            break;   
-        case JSMN_ARRAY:
-            printf("type: array\n");
-            break;
-        case JSMN_STRING:
-            printf("type: string\n");
-            break;
-        case JSMN_PRIMITIVE:
-            printf("type: primitive\n");
-            break;
+    switch (t->type) {
+    case JSMN_UNDEFINED:
+        std::cout << "type: undefined" << std::endl;
+        break;
+    case JSMN_OBJECT:
+        std::cout << "type: object" << std::endl;
+        break;
+    case JSMN_ARRAY:
+        std::cout << "type: array" << std::endl;
+        break;
+    case JSMN_STRING:
+        std::cout << "type: string" << std::endl;
+        break;
+    case JSMN_PRIMITIVE:
+        std::cout << "type: primitive" << std::endl;
+        break;
     }
-        printf("start: %d\nend::%d\nsize: %d\nparent: %d\n",
-            t->start,t->end,t->size,t->parent);
 
-        // cpy the string into a buffer and print it
-        size_t len = t->end-t->start;
-        char * buff = new char[len+1];
-        strncpy(buff,(m_js+t->start),len);
-        buff[len] = '\0';
+    std::cout << "start  :" << t->start << " ";
+    std::cout << "end    :" << t->end << ", ";
+    std::cout << "size   :" << t->size << ", "; 
+    std::cout << "parent :" << t->parent << ", ";
 
-        printf("value: %s\n", buff);
-        delete [] buff;
+    // cpy the string into a buffer and print it
+    size_t len = t->end - t->start;
+
+    std::string str(m_js.data() + t->start, len);
+
+    std::cout << "value: " << str << std::endl;
 }
 /**
  * @brief Render a set of tokens into a set of jq paths
  * The design of this detailed in [Render design](./docs/render-design.md)
- * 
- * @param depth 
- * @param token 
+ *
+ * @param depth
+ * @param token
  */
 
-void jsmn_parser::render(int depth, unsigned int hash_value, unsigned int& token) {    
+void jsmn_parser::render(int depth, unsigned int hash_value,
+                         unsigned int &token) {
 
     kv_state kv = kv_state::START;
-    
-    while(token < m_num_tokens) {
-        switch(m_tokens[token].type) {
-            case JSMN_OBJECT: {
-                unsigned int size = m_tokens[m_tokens[token].parent].size;
-                for(unsigned int idx=0;idx<size; idx++) { 
-                    token++; // move to the next token
 
-                    switch(m_tokens[token].type) {
-                        case JSMN_OBJECT:
-                            render(depth+1,hash_value,token);
-                            break;
-                        case JSMN_ARRAY: {
-                            
-                        }
+    while (token < m_num_tokens) {
+        switch (m_tokens[token].type) {
+        // Parse a JSON object
+        case JSMN_OBJECT: {
+            unsigned int size = m_tokens[m_tokens[token].parent].size;
+            for (unsigned int idx = 0; idx < size; idx++) {
+                token++; // move to the next token
 
-                        default:
-                            break;
-                    }
-                    
+                switch (m_tokens[token].type) {
+                case JSMN_OBJECT:
+                    render(depth + 1, hash_value, token);
+                    break;
+                case JSMN_ARRAY: {
                 }
-                break;
+
+                default:
+                    break;
+                }
             }
+            break;
+        }
 
-            case JSMN_ARRAY:
-                kv = kv_state::START;
-                token++;
-                render(depth+1,hash_value,token);
-                break;
-            
-            case JSMN_STRING:
-                    kv++;
-                    if(kv == kv_state::VALUE) {
-                        // We need to add this to the path value
-                    }
-                    else if(kv == kv_state::KEY) {
-                        // We need to add the hash to our hash 
-                        int len = m_tokens[token].end - m_tokens[token].start;
-                        hash_value = merge_hash(hash(&m_js[m_tokens[token].start],len),hash_value);
-                    }
-                break;
-            
-            case JSMN_PRIMITIVE: {
+        // Parse a JSON array
+        case JSMN_ARRAY:
+            kv = kv_state::START;
+            token++;
+            render(depth + 1, hash_value, token);
+            break;
 
-                }
-                break;
+        // Parse a string. This is either a key or a value to a key
+        case JSMN_STRING:
+            kv++;
+            if (kv == kv_state::VALUE) {
+                // We need to add this to the path value
+            } else if (kv == kv_state::KEY) {
+                // We need to add the hash to our hash
+                int len = m_tokens[token].end - m_tokens[token].start;
+                hash_value = merge_hash(hash(&m_js[m_tokens[token].start], len),
+                                        hash_value);
+            }
+            break;
 
-            case JSMN_UNDEFINED: 
-                std::cerr << "UNdefined token" << std::endl;
-                abort();
-                break; 
+        case JSMN_PRIMITIVE: {
 
-            default:
-                break;
+        } break;
+
+        case JSMN_UNDEFINED:
+            std::cerr << "UNdefined token" << std::endl;
+            abort();
+            break;
+
+        default:
+            break;
         }
     }
 }
 
 void jsmn_parser::render() {
     unsigned int token = 0;
-    render(0,0,token);
+    render(0, 0, token);
 }
-
 
 // enum clas kv_state
