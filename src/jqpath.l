@@ -6,9 +6,13 @@
     ** checking on input strings.
     **/
 
+    #include <stdio.h>
     #include "jqpath.h"
+    #include "jqpath.tab.h"
+
 
     char * capture = NULL;
+
     /*
      * In JQ syntax, a dot represents the start of a
      * JSON object. The JSON {name = "value"} could be 
@@ -38,7 +42,7 @@
 
 \".*\"                      { capture = yytext; add_string_element(capture); return STRING;}
 \.                          { capture = yytext; path.depth++; return DOT;} 
-\!\=                        { capture - yytext; path.op = JQ_NOT_EQUALS; return NOT_EQUALS;}
+\!\=                        { capture = yytext; path.op = JQ_NOT_EQUALS; return NOT_EQUALS;}
 \=                          { capture = yytext; path.op = JQ_EQUALS; return EQUALS;}
 \[                          { capture = yytext; return OPEN_ARR;}
 \]                          { capture = yytext; path.depth++; return CLOSE_ARR;}
@@ -92,6 +96,7 @@ void set_input_string(const char* in) {
     path.op = 0;
     path.depth = 0;
     path.hash  = 0;
+    path.value.value.int_val = 0; 
 
     yy_scan_string(in);
 }
