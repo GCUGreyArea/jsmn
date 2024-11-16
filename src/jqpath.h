@@ -5,8 +5,10 @@
 extern "C" {
 #endif
 
-#include "jqpath.tab.h"
+#include <stdio.h>
+#include <stdbool.h>
 
+#include "hash.h"
 
 enum jq_operator {
     JQ_NOT_SET = 0,        // No value has been set yet
@@ -18,15 +20,39 @@ enum jq_operator {
     JQ_CLOSE_TO            // Use Levenshtein distance
 };
 
+union jqvalue_u {
+    int int_val;
+    float float_val;
+    char * string_val;
+};
+
+enum jqvaltype_e {
+    JQ_NO_VAL,
+    JQ_INT_VAL,
+    JQ_FLOAT_VAL,
+    JQ_STRING_VAL
+};
+
+struct jqvalue {
+    enum jqvaltype_e type;
+    union jqvalue_u value;
+};
+
 struct jqpath {
     unsigned int hash;      // The hash of the path
     unsigned int depth;     // The depth of the path
     enum jq_operator op;    // The operator to use if there is an eequality argument
-    char * string;          // The string representing the equality argument
+    struct jqvalue value;   // The string representing the equality argument
 };
 
-int jqpath_parse_string(const char * str);
+struct jqpath* jqpath_parse_string(const char * str);
 struct jqpath* jqpath_get_path();
+void jqpath_close_path(struct jqpath* path);
+
+bool jqpath_value_equals_int(struct jqpath * path,int val);
+bool jqpath_value_equals_float(struct jqpath * path,float val);
+bool jqpath_value_equals_string(struct jqpath * path,char * val);
+
 
 #ifdef __cplusplus
 }
