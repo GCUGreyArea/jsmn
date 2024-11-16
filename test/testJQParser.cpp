@@ -6,81 +6,130 @@
 extern int lex_depth;
 
 TEST(JQParser,testJQParser) {
+    struct jqpath * path = NULL;
     const char* str = ".name.value = \"new\"";
-    int ret = jqpath_parse_string(str);
-    ASSERT_EQ(ret,0);
+    path = jqpath_parse_string(str);
+    ASSERT_TRUE(path != NULL);
+    jqpath_close_path(path);
 
     str = ".name.value != \"test\"";
-    ret = jqpath_parse_string(str);
-    ASSERT_EQ(ret,0);
+    path = jqpath_parse_string(str);
+    ASSERT_TRUE(path != NULL);
+    jqpath_close_path(path);
 
     str = ".name[1].value != \"test\"";
-    ret = jqpath_parse_string(str);
-    ASSERT_EQ(ret,0);
+    path = jqpath_parse_string(str);
+    ASSERT_TRUE(path != NULL);
+    jqpath_close_path(path);
 
     str = ".name[101].value = 12";
-    ret = jqpath_parse_string(str);
-    ASSERT_EQ(ret,0);
+    path = jqpath_parse_string(str);
+    ASSERT_TRUE(path != NULL);
+    jqpath_close_path(path);
 
     str = ".name[1].value = 100.12";
-    ret = jqpath_parse_string(str);
-    ASSERT_EQ(ret,0);
-
+    path = jqpath_parse_string(str);
+    ASSERT_TRUE(path != NULL);
+    jqpath_close_path(path);
 }
 
 TEST(JQParser,testJQDepth) {
-    struct jqpath* path = jqpath_get_path();
+    struct jqpath* path = NULL;
     struct jqpath saved = {};
 
     // We also want to insure that each path results in a unique hash value
     std::set<unsigned int> ints;
 
     const char* str = ".name";
-    int ret = jqpath_parse_string(str);
-    ASSERT_EQ(ret,0);
+    path = jqpath_parse_string(str);
+    ASSERT_TRUE(path != NULL);
     ASSERT_EQ(path->depth,1);
     auto single = ints.emplace(path->hash);
     ASSERT_TRUE(single.second);
+    jqpath_close_path(path);
 
     str = ".name.value";
-    ret = jqpath_parse_string(str);
-    ASSERT_EQ(ret,0);
+    path = jqpath_parse_string(str);
+    ASSERT_TRUE(path != NULL);
     ASSERT_EQ(path->depth,2);
     single = ints.emplace(path->hash);
     ASSERT_TRUE(single.second);
+    jqpath_close_path(path);
 
 
     str = ".name[1].value";
-    ret = jqpath_parse_string(str);
-    ASSERT_EQ(ret,0);
+    path = jqpath_parse_string(str);
+    ASSERT_TRUE(path != NULL);
     ASSERT_EQ(path->depth,3);
     single = ints.emplace(path->hash);
     ASSERT_TRUE(single.second);
+    jqpath_close_path(path);
 
     str = ".name[1].value.noun";
-    ret = jqpath_parse_string(str);
-    ASSERT_EQ(ret,0);
+    path = jqpath_parse_string(str);
+    ASSERT_TRUE(path != NULL);
     ASSERT_EQ(path->depth,4);
     single = ints.emplace(path->hash);
     ASSERT_TRUE(single.second);
+    jqpath_close_path(path);
 
     str = ".name[1].value.three[].four";
-    ret = jqpath_parse_string(str);
-    ASSERT_EQ(ret,0);
+    path = jqpath_parse_string(str);
+    ASSERT_TRUE(path != NULL);
     ASSERT_EQ(path->depth,6);
     single = ints.emplace(path->hash);
     ASSERT_TRUE(single.second);
-
     saved = *path;
+    jqpath_close_path(path);
 
     // The values should numerically be equivolet
     str = ".name[00001].value.three[].four";
-    ret = jqpath_parse_string(str);
-    ASSERT_EQ(ret,0);
+    path = jqpath_parse_string(str);
+    ASSERT_TRUE(path != NULL);
     ASSERT_EQ(path->depth,6);
     single = ints.emplace(path->hash);
     ASSERT_FALSE(single.second);
 
     ASSERT_EQ(saved.depth,path->depth);
     ASSERT_EQ(saved.hash,path->hash);
+    jqpath_close_path(path);
+
+
+    str = ".name[1].value.three[].four = 21";
+    path = jqpath_parse_string(str);
+    ASSERT_TRUE(path != NULL);
+    ASSERT_EQ(path->depth,6);
+    single = ints.emplace(path->hash);
+    ASSERT_FALSE(single.second);
+
+    ASSERT_EQ(path->op,JQ_EQUALS);
+    ASSERT_EQ(path->value.value.int_val,21);
+    jqpath_close_path(path);
+
+    str = ".name[1].value.three[].four != 21";
+    path = jqpath_parse_string(str);
+    ASSERT_TRUE(path != NULL);
+    ASSERT_EQ(path->depth,6);
+    single = ints.emplace(path->hash);
+    ASSERT_FALSE(single.second);
+
+    ASSERT_EQ(path->op,JQ_NOT_EQUALS);
+    ASSERT_EQ(path->value.value.int_val,21);
+    jqpath_close_path(path);
+
+
+    str = ".name[1].value.three[].four != \"Satan\"";
+    path = jqpath_parse_string(str);
+    ASSERT_TRUE(path != NULL);
+    ASSERT_EQ(path->depth,6);
+    single = ints.emplace(path->hash);
+    ASSERT_FALSE(single.second);
+
+    ASSERT_EQ(path->op,JQ_NOT_EQUALS);
+
+    std::string val1("\"Satan\"");
+    std::string val2(path->value.value.string_val);
+
+    ASSERT_TRUE(val1 == val2);
+    jqpath_close_path(path);
 }

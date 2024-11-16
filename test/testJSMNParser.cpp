@@ -7,7 +7,6 @@
 #include <iostream>
 #include <string>
 
-
 TEST(JSMNParser, testEmptyStrings) {
     jsmn_parser p("{}");
 
@@ -93,7 +92,7 @@ TEST(JSMNParser, testLargeFileRead) {
     using namespace std;
 
     string line;
-    ifstream t("test/resources/nginx_json_logs.json");
+    ifstream t("test/resources/test-data/large-file.json");
     if (!t.is_open()) {
         ASSERT_EQ(false,true);
     }
@@ -107,5 +106,51 @@ TEST(JSMNParser, testLargeFileRead) {
     jsmn_parser p(buffer.c_str());
 
     unsigned int ret = p.parse();
-    ASSERT_EQ(ret,874855);
+    ASSERT_EQ(ret,1252988);
+}
+
+TEST(JSMNParser, testLargeFileReadSerialise) {
+    using namespace std;
+
+    string line;
+    ifstream t("test/resources/test-data/large-file.json");
+    if (!t.is_open()) {
+        ASSERT_EQ(false,true);
+    }
+    
+    t.seekg(0, std::ios::end);
+    size_t size = t.tellg();
+    std::string buffer(size, ' ');
+    t.seekg(0);
+    t.read(&buffer[0], size);
+
+    jsmn_parser p(buffer.c_str());
+
+    unsigned int ret = p.parse();
+    ASSERT_EQ(ret,1252988);
+
+    // Serialise 
+    p.serialise("test/resources/outfile.bin");
+
+    // Desierialise into new instance
+    jsmn_parser p2;
+    p2.deserialise("test/resources/outfile.bin");
+
+    unsigned int last = p2.last_token();
+
+    ASSERT_EQ(ret,last);
+
+    // Test that the strings are the same 
+    ASSERT_STREQ(p.get_json().c_str(),p2.get_json().c_str());
+
+    // Test that all the tokens are the same
+    jsmntok_t * t1 = p.get_tokens();
+    jsmntok_t * t2 = p2.get_tokens();
+    for(unsigned int i=0;i<last+1;i++) {
+        ASSERT_EQ(t1->end,t2->end);
+        ASSERT_EQ(t1->parent,t2->parent);
+        ASSERT_EQ(t1->size,t2->size);
+        ASSERT_EQ(t1->start,t2->start);
+        ASSERT_EQ(t1->type,t2->type);
+    }
 }
