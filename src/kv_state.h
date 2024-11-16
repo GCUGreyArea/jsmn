@@ -9,8 +9,13 @@ enum class kv_state {
 };
 
 inline kv_state& operator++(kv_state& state, int dummy) {
-	state = static_cast<kv_state>(static_cast<int>(state) + 1);
 
+    if(state == kv_state::NEXT) {
+        state = kv_state::START;
+        return state;
+    }
+
+	state = static_cast<kv_state>(static_cast<int>(state) + 1);
     return state;
 }
 
