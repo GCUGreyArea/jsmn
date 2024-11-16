@@ -3,6 +3,10 @@ NAME 	 = jsmn
 CFLAGS   = -std=c11 -Wall -g -fPIC
 CXXFLAGS = -std=c++17 -Wall -g -fPIC
 
+
+CC=gcc
+CXX=g++
+
 # Automated code gerneation. Don't fuck with it 
 # unless you know what your doing!
 TARGET  = lib$(NAME).so
@@ -75,5 +79,7 @@ build/%.o: %.cpp
 	$(CXX) -c $(CXXFLAGS) -Lbuild -Isrc -Itest -c $< -o $@
 
 clean:
-	rm -rf build cmd_example jsondump simple test.bin tests
+	rm -rf build cmd_example jsondump simple test.bin tests src/*.tab.h 
+
+.PRECIOUS: *.tab.c 
 
