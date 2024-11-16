@@ -3,7 +3,6 @@ NAME 	 = jsmn
 CFLAGS   = -std=c11 -Wall -g -fPIC
 CXXFLAGS = -std=c++17 -Wall -g -fPIC
 
-
 CC=gcc
 CXX=g++
 
