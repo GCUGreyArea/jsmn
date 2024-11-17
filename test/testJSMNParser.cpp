@@ -153,4 +153,7 @@ TEST(JSMNParser, testLargeFileReadSerialise) {
         ASSERT_EQ(t1->start,t2->start);
         ASSERT_EQ(t1->type,t2->type);
     }
+
+    // Remove the output file 
+    std::system("rm test/resources/outfile.bin");
 }
