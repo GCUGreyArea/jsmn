@@ -1,6 +1,8 @@
 #ifndef JQ_PATH
 #define JQ_PATH
 
+#include <string>
+
 #include "jqpath.h"
 #include "string_funcs.h"
 
@@ -11,6 +13,10 @@ public:
     ~JQ();
 
     bool operator==(struct jqpath &path);
+    bool operator==(int val);
+    bool operator==(float val);
+    bool operator==(const char * str);
+    bool operator==(std::string str);
 
 protected:
 

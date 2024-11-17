@@ -1,3 +1,4 @@
+#include <cstring>
 #include "JQ.hpp"
 
 JQ::JQ() : hash(0), depth(0), type(JQ_NO_VAL), op(JQ_NOT_SET) {}
@@ -45,6 +46,38 @@ bool JQ::operator==(struct jqpath &path) {
                 return true;
             }
         }
+    }
+
+    return false;
+}
+
+bool JQ::operator==(int val) {
+    if(this->type == JQ_INT_VAL) {
+        return this->val.int_val == val;
+    } 
+
+    return false;
+}
+
+bool JQ::operator==(float val) {
+    if(this->type == JQ_FLOAT_VAL) {
+        return this->val.float_val == val;
+    }
+
+    return false;
+}
+
+bool JQ::operator==(const char * str) {
+    if(this->type == JQ_STRING_VAL) {
+        return std::strcmp(this->val.string_val,str) == 0;
+    }
+
+    return false;
+}
+
+bool JQ::operator==(std::string str) {
+    if(this->type == JQ_STRING_VAL) {
+        return str == this->val.string_val;
     }
 
     return false;
