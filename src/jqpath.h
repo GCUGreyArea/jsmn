@@ -38,11 +38,18 @@ struct jqvalue {
     union jqvalue_u value;
 };
 
+struct span {
+    int start;
+    int length;
+};
+
 struct jqpath {
-    unsigned int hash;      // The hash of the path
-    unsigned int depth;     // The depth of the path
-    enum jq_operator op;    // The operator to use if there is an eequality argument
-    struct jqvalue value;   // The string representing the equality argument
+    unsigned int hash;      //! The hash of the path
+    unsigned int depth;     //! The depth of the path
+    bool rendered;          //! Has the vakue been rendered from the string
+    struct span sp;         //! Place in the string for the value
+    enum jq_operator op;    //! The operator to use if there is an eequality argument
+    struct jqvalue value;   //! The string representing the equality argument
 };
 
 struct jqpath* jqpath_parse_string(const char * str);
