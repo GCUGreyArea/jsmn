@@ -1,24 +1,53 @@
 #include <cstring>
+#include <string>
 #include "JQ.hpp"
 
-JQ::JQ() : hash(0), depth(0), type(JQ_NO_VAL), op(JQ_NOT_SET) {}
+JQ::JQ() : 
+    hash(0), 
+    depth(0),
+    rendered(false),
+    sp{0,0}, 
+    type(JQ_NO_VAL), 
+    op(JQ_NOT_SET) {}
 
-JQ::JQ(struct jqpath &val)
-    : hash(val.hash), depth(val.depth), type(val.value.type), op(val.op) {
-    switch (type) {
-    case JQ_NO_VAL:
-        break;
-    case JQ_INT_VAL:
-        this->val.int_val = val.value.value.int_val;
-        break;
-    case JQ_FLOAT_VAL:
-        this->val.float_val = val.value.value.float_val;
-        break;
-    case JQ_STRING_VAL:
-        this->val.string_val = copy_string(val.value.value.string_val);
-        break;
+JQ::JQ(struct jqpath &val) : 
+    hash(val.hash), 
+    depth(val.depth), 
+    sp(sp),
+    rendered(rendered),
+    type(val.value.type), 
+    op(val.op) {
+        if(rendered) {
+            switch (type) {
+            case JQ_NO_VAL:
+                break;
+            case JQ_INT_VAL:
+                this->val.int_val = val.value.value.int_val;
+                break;
+            case JQ_FLOAT_VAL:
+                this->val.float_val = val.value.value.float_val;
+                break;
+            case JQ_STRING_VAL:
+                this->val.string_val = copy_string(val.value.value.string_val);
+                break;
+            }
     }
 }
+
+JQ::JQ(int depth, unsigned int hash, span sp) :
+    depth(depth),
+    hash(hash),
+    sp(sp),
+    rendered(false) {}
+
+
+JQ::JQ(int depth, unsigned int hash, const char * str) : 
+    depth(depth),
+    hash(hash),
+    rendered(true),
+    type(JQ_STRING_VAL) {
+        val.string_val = copy_string((char*) str);
+    }
 
 JQ::~JQ() {
     if (type == JQ_STRING_VAL) {
