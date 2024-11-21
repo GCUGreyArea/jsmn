@@ -39,22 +39,23 @@ path:
 ;
 
 complete_path: 
-  DOT LABEL                             { /* printf("parse-DOT LABEL path\n"); */ }
+  DOT LABEL                             { /* add_string_to_path(strval,strlen(strval)); */ }
+| DOT LABEL array_def                   {                                         }   
 | DOT LABEL array_def complete_path     { /* printf("parse-ARR\n"); */ }
 | DOT LABEL complete_path               { /* printf("complex complete path\n"); */}
 ;
 
 array_def: 
-  OPEN_ARR CLOSE_ARR      { /*printf("empty array: lex_depth=%d\n",lex_depth); */}
+  OPEN_ARR CLOSE_ARR      {/*add_string_to_path("[]",strlen("[]"));*/}
 | OPEN_ARR INT CLOSE_ARR  {add_index_to_path(intval,last_int_len);}
 
 expression: 
-  EQUALS INT        { path.value.type = JQ_INT_VAL; path.value.value.int_val = intval; }
-| EQUALS FLOAT      { path.value.type = JQ_FLOAT_VAL; path.value.value.float_val = floatval; }
-| EQUALS STRING     { path.value.type = JQ_STRING_VAL; path.value.value.string_val = copy_string(strval); }
-| NOT_EQUALS INT    { path.value.type = JQ_INT_VAL; path.value.value.int_val = intval; }
-| NOT_EQUALS FLOAT  { path.value.type = JQ_FLOAT_VAL; path.value.value.float_val = floatval; }
-| NOT_EQUALS STRING { path.value.type = JQ_STRING_VAL; path.value.value.string_val = copy_string(strval); }
+  EQUALS INT        { path.value.type = JQ_INT_VAL; path.value.value.int_val = intval; path.rendered = true; }
+| EQUALS FLOAT      { path.value.type = JQ_FLOAT_VAL; path.value.value.float_val = floatval; path.rendered = true;}
+| EQUALS STRING     { path.value.type = JQ_STRING_VAL; path.value.value.string_val = copy_string(strval); path.rendered = true;}
+| NOT_EQUALS INT    { path.value.type = JQ_INT_VAL; path.value.value.int_val = intval; path.rendered = true;}
+| NOT_EQUALS FLOAT  { path.value.type = JQ_FLOAT_VAL; path.value.value.float_val = floatval; path.rendered = true;}
+| NOT_EQUALS STRING { path.value.type = JQ_STRING_VAL; path.value.value.string_val = copy_string(strval); path.rendered = true;}
 ;
 
 
@@ -66,8 +67,8 @@ int yyerror(char * er) {
 }
 
 void add_index_to_path(int idx, int idx_len) {
-    char * val = malloc(idx_len + 1);
-    sprintf(val,"%i",idx);
+    char * val = malloc(idx_len + 3);
+    sprintf(val,"[%i]",idx);
     path.hash = merge_hash(path.hash,hash(val,strlen(val)));
     free(val);
 }
@@ -83,19 +84,23 @@ static inline struct jqpath * replicate_path() {
     p->op = path.op;
     p->depth = path.depth;
     p->value.type = path.value.type;
+    p->rendered = false;
 
     switch(p->value.type) {
       case JQ_STRING_VAL:
         p->value.value.string_val = path.value.value.string_val;
         path.value.value.string_val = NULL;
+        p->rendered = true;
         break;
 
       case JQ_FLOAT_VAL: 
         p->value.value.float_val = path.value.value.float_val;
+        p->rendered = true;
         break;
 
       case JQ_INT_VAL:
         p->value.value.int_val = path.value.value.int_val;
+        p->rendered = true;
         break;
 
       default:
