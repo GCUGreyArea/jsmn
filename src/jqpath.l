@@ -10,9 +10,6 @@
     #include "jqpath.h"
     #include "jqpath.tab.h"
 
-
-    char * capture = NULL;
-
     /*
      * In JQ syntax, a dot represents the start of a
      * JSON object. The JSON {name = "value"} could be 
@@ -40,15 +37,15 @@
 
 %%
 
-\".*\"                      { capture = yytext; add_string_element(capture); return STRING;}
-\.                          { capture = yytext; path.depth++; return DOT;} 
-\!\=                        { capture = yytext; path.op = JQ_NOT_EQUALS; return NOT_EQUALS;}
-\=                          { capture = yytext; path.op = JQ_EQUALS; return EQUALS;}
-\[                          { capture = yytext; return OPEN_ARR;}
-\]                          { capture = yytext; path.depth++; return CLOSE_ARR;}
-[0-9]+\.[0-9]+              { capture = yytext; add_float_element(capture); return FLOAT;}
-[0-9]+                      { capture = yytext; add_int_element(capture); return INT;}
-[a-zA-Z][a-zA-Z0-9]+        { capture = yytext; add_label_to_path(yytext); return LABEL;}
+\".*\"                      { add_string_element(yytext); return STRING;}
+\.                          { path.depth++; return DOT;} 
+\!\=                        { path.op = JQ_NOT_EQUALS; return NOT_EQUALS;}
+\=                          { path.op = JQ_EQUALS; return EQUALS;}
+\[                          { return OPEN_ARR;}
+\]                          { path.depth++; return CLOSE_ARR;}
+[0-9]+\.[0-9]+              { add_float_element(yytext); return FLOAT;}
+[0-9]+                      { add_int_element(yytext); return INT;}
+[a-zA-Z][a-zA-Z0-9]+        { add_label_to_path(yytext); return LABEL;}
 
 %%
 
@@ -72,6 +69,7 @@ int add_string_element(char * el) {
 
 
 void add_label_to_path(char * label) {
+    // printf("adding label: %s\n", label);
     path.hash = merge_hash(path.hash,hash(label,strlen(label)));
 }
 
