@@ -18,6 +18,7 @@
     extern struct jqpath path;
     int yyerror(char * er);
     void add_index_to_path(int idx,int len);
+    void add_string_to_path(char * str, int len);
 %}
 
 %token  STRING;
@@ -46,7 +47,7 @@ complete_path:
 ;
 
 array_def: 
-  OPEN_ARR CLOSE_ARR      {/*add_string_to_path("[]",strlen("[]"));*/}
+  OPEN_ARR CLOSE_ARR      {add_string_to_path("[]",strlen("[]"));}
 | OPEN_ARR INT CLOSE_ARR  {add_index_to_path(intval,last_int_len);}
 
 expression: 
@@ -71,6 +72,11 @@ void add_index_to_path(int idx, int idx_len) {
     sprintf(val,"[%i]",idx);
     path.hash = merge_hash(path.hash,hash(val,strlen(val)));
     free(val);
+}
+
+void add_string_to_path(char * str, int len) {
+    // printf("Adding string: %s\n",str);
+    path.hash = merge_hash(path.hash,hash(str,len));
 }
 
 static inline struct jqpath * replicate_path() {
