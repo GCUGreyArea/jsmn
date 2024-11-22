@@ -4,13 +4,12 @@
 enum class kv_state {
     START = 0,
     KEY   = 1,
-    VALUE = 2,
-    NEXT  = 3
+    VALUE = 2
 };
 
 inline kv_state& operator++(kv_state& state, int dummy) {
 
-    if(state == kv_state::NEXT) {
+    if(state == kv_state::VALUE) {
         state = kv_state::START;
         return state;
     }
