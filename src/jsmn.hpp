@@ -29,6 +29,8 @@
 
 #include <map>
 #include <string>
+#include <memory>
+#include <vector>
 
 #include "JQ.hpp"
 #include "jqpath.h"
@@ -87,26 +89,64 @@ class jsmn_parser {
     // Default tokens array size
     static constexpr unsigned int def_size = 1024;
 
-    size_t m_pos;        // offset in the JSON string
-    size_t m_token_next; // next token to allocate
-    int m_toksuper;      // superior token node, e.g. parent object or array
-    jsmntok_t *m_tokens; // Array of tokens
-    unsigned int m_num_tokens; // Number of tokens in the array
+    unsigned int m_pos;         //! offset in the JSON string
+    unsigned int m_token_next;  //! next token to allocate
+    int m_toksuper;             //! superior token node, e.g. parent object or array
+    jsmntok_t *m_tokens;        //! Array of tokens
+    unsigned int m_num_tokens;  //! Number of tokens in the array
 
     // String to parse
     std::string m_js; // NULL terminated JSON string
     size_t m_length;  // Length of JSON string
     size_t m_mull;    // When we ru out pf tokens, grow by * m_mull
-    size_t m_depth;   // Depth into the structure
-    
-    std::map<unsigned int, JQ> m_paths; // The value for each path
+    unsigned int m_depth;   // Depth into the structure
+
+    public:
+    // Structure to hold paths
+    struct path_holder {
+        unsigned int hash;  //! Hash of the path 
+        unsigned int depth; //! Depth of the path 
+        bool key;           //! Key or Value
+
+        // If this is a value, and it's a list
+        // then this wil hold multiple references
+        // otherwise there will be one reference...
+        std::shared_ptr<std::vector<jsmntok_t *>> list;
+    };
+
+    private:
+    // Paths parsed by parsing
+    std::map<unsigned int,path_holder> m_paths;
 
   protected:
+    // State for the parser
+    enum parse_state { 
+        START, 
+        OBJECT, 
+        LIST 
+    };
+
+    std::string to_string(jsmntype_t t) {
+        switch (t)
+        {
+        case JSMN_ARRAY:     return "JSMN_ARRAY";
+        case JSMN_OBJECT:    return "JSMN_OBJECT";
+        case JSMN_STRING:    return "JSMN_STRING";
+        case JSMN_PRIMITIVE: return "JSMN_PRIMATIVE";
+        default:
+            break;
+        }
+
+        return "UNKNOWN_TYPE";
+    }
+
     jsmntok_t *jsmn_alloc_token();
     void jsmn_fill_token(jsmntok_t *token, const int start, const int end,
                          jsmntype_t type);
     int jsmn_parse_primitive();
     int jsmn_parse_string();
+    void do_list_values(unsigned int hash_value, unsigned int index, kv_state kv);
+    unsigned int get_token_hash();
 
   public:
     jsmn_parser(std::string str, unsigned int mull)
@@ -131,7 +171,7 @@ class jsmn_parser {
 
     unsigned int last_token() { return m_token_next; }
 
-    JQ * get_path(struct jqpath * p);
+    path_holder *get_path(struct jqpath *p);
 };
 
 #endif /* JSMN_H */
