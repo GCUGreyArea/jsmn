@@ -107,7 +107,6 @@ class jsmn_parser {
                          jsmntype_t type);
     int jsmn_parse_primitive();
     int jsmn_parse_string();
-    void render(int depth, unsigned int hash, unsigned int &token, kv_state state);
 
   public:
     jsmn_parser(std::string str, unsigned int mull)
@@ -131,7 +130,6 @@ class jsmn_parser {
     std::string get_json() { return m_js; }
 
     unsigned int last_token() { return m_token_next; }
-    void render();
 
     JQ * get_path(struct jqpath * p);
 };
