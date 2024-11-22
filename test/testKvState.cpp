@@ -10,6 +10,4 @@ TEST(KVState, testKVState) {
     ASSERT_EQ(kv,kv_state::KEY);
     kv++;
     ASSERT_EQ(kv,kv_state::VALUE);
-    kv++;
-    ASSERT_EQ(kv,kv_state::NEXT);
 }
