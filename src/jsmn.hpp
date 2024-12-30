@@ -72,6 +72,7 @@ typedef struct jsmntok {
     int end;
     int size;
     int parent;
+    int idx;
 } jsmntok_t;
 
 // struct path {
@@ -119,13 +120,6 @@ class jsmn_parser {
     std::map<unsigned int,path_holder> m_paths;
 
   protected:
-    // State for the parser
-    enum parse_state { 
-        START, 
-        OBJECT, 
-        LIST 
-    };
-
     std::string to_string(jsmntype_t t) {
         switch (t)
         {

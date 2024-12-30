@@ -4,15 +4,14 @@
 #include <cstring>
 
 #include "JQ.hpp"
-#include "jsmn.hpp"
-#include "hash.h"
-#include "kv_state.h"
 #include "Numbers.h"
 #include "hash.h"
+#include "jsmn.hpp"
+#include "kv_state.h"
 
 jsmn_parser::~jsmn_parser() {
-    if(m_tokens) {
-        delete[] m_tokens;
+    if (m_tokens) {
+        free(m_tokens);
     }
 
     m_tokens = nullptr;
@@ -25,14 +24,13 @@ jsmntok_t *jsmn_parser::jsmn_alloc_token() {
 
     // Over the allocated size, realloc.
     if (m_token_next >= m_num_tokens) {
-        jsmntok_t *prev = m_tokens;
-        unsigned int num_tokens = m_num_tokens;
         m_num_tokens = m_num_tokens * m_mull;
-        jsmntok_t *next_toks = new jsmntok_t[m_num_tokens];
-        std::memcpy(next_toks, prev, sizeof(jsmntok_t) * (size_t)num_tokens);
-
-        delete[] m_tokens;
-        m_tokens = next_toks;
+        m_tokens =
+            (jsmntok_t *)realloc(m_tokens, sizeof(jsmntok_t) * m_num_tokens);
+        if (m_tokens == NULL) {
+            throw std::runtime_error(
+                "Memory allocation failure in jsmn_alloc_token()");
+        }
     }
 
     // Assign the token and return
@@ -54,6 +52,7 @@ void jsmn_parser::jsmn_fill_token(jsmntok_t *token, const int start,
     token->start = start;
     token->end = end;
     token->size = 0;
+    token->idx = -1;
 }
 
 /**
@@ -189,64 +188,33 @@ int jsmn_parser::jsmn_parse_string() {
 /**
  * Parse JSON string and fill m_tokens.
  */
-void jsmn_parser::do_list_values(unsigned int path_hash, unsigned int index, kv_state kv) {
-
-    // Here we need to add the array index into the path
-    std::string idx = "[" + std::to_string(index) + "]";
-    unsigned int hv = merge_hash(path_hash,hash(idx.c_str(),idx.length()));
-    path_holder p = {hv, m_depth, kv == kv_state::KEY,std::make_shared<std::vector<jsmntok_t *>>()};
-    p.list->push_back(&m_tokens[m_token_next-1]);
-    m_paths.emplace(hv,p);    
-    hv = merge_hash(path_hash,hash("[]",2));
-
-    if(index == 0) {
-        path_holder p1 = {hv, m_depth, false, std::make_shared<std::vector<jsmntok_t *>>()};
-        p1.list->push_back(&m_tokens[m_token_next-1]);
-        m_paths.emplace(hv,p1);
-    }
-    else {
-        auto it = m_paths.find(hv);
-        if(it == m_paths.end()) {
-            // TODO: Make that better!
-            throw std::runtime_error("Bad state");
-        }
-        it->second.list->push_back(&m_tokens[m_token_next-1]);
-    }
-
-}
 
 unsigned int jsmn_parser::get_token_hash() {
-    jsmntok_t * t = &m_tokens[m_token_next-1];
+    jsmntok_t *t = &m_tokens[m_token_next - 1];
 
-    switch (t->type)
-    {
+    switch (t->type) {
     case JSMN_PRIMITIVE:
-    case JSMN_STRING: 
-        return hash(m_js.data() + t->start,t->end - t->start);
+    case JSMN_STRING:
+        return hash(m_js.data() + t->start, t->end - t->start);
 
     default:
-        throw std::runtime_error(std::string("Illegal use of internal function: get_token_hash() for token type: ") + to_string(t->type));
+        throw std::runtime_error(
+            std::string("Illegal use of internal function: get_token_hash() "
+                        "for token type: ") +
+            to_string(t->type));
         break;
     }
 }
-
 
 int jsmn_parser::parse() {
     int r;
     int i;
     jsmntok_t *token;
     int count = m_token_next; // Represents the number fo tokens parsed
-    int index = 0; // Current index of the current array
+    int index = 0;            // Current index of the current array
 
     unsigned int path_hash = 0;
-    jsmn_parser::parse_state state = parse_state::START;
     kv_state kv = kv_state::START;
-
-    std::stack<int> indicies_stack; // Save the staet of each list
-    std::stack<unsigned int> hash_stack;
-    std::stack<jsmn_parser::parse_state> state_stack;
-
-    state_stack.push(parse_state::START);
     m_depth = 0;
 
     for (; m_pos < m_length && m_js[m_pos] != '\0'; m_pos++) {
@@ -257,18 +225,6 @@ int jsmn_parser::parse() {
         switch (c) {
         case '{':
         case '[':
-            // Save the old state
-            state_stack.push(state); 
-            hash_stack.push(path_hash);
-            state = (c == '{') ? parse_state::OBJECT : parse_state::LIST; // Set the new state
-
-            // If this is a list increment the counter for depth
-            if(state == parse_state::LIST) {
-                // Save the current index
-                indicies_stack.push(index);
-                index=0;
-            }
-
             count++;
             m_depth++;
 
@@ -291,29 +247,25 @@ int jsmn_parser::parse() {
 #ifdef JSMN_PARENT_LINKS
                 token->parent = m_toksuper;
 #endif
+                if(t->type == JSMN_ARRAY) {
+                    token->idx = t->size;                    
+                }
             }
-            token->type = (c == '{' ? JSMN_OBJECT : JSMN_ARRAY);
+            
+            if (c == '[') {
+                token->type = JSMN_ARRAY;
+            }
+            else {
+                token->type = JSMN_OBJECT;
+            }
+
             token->start = m_pos;
             m_toksuper = m_token_next - 1;
             break;
 
         case '}':
         case ']':
-            if(token->type  == JSMN_ARRAY) {
-                // restory the preivious state
-                if(indicies_stack.size() > 0) { 
-                    index = indicies_stack.top();
-                    indicies_stack.pop();                
-                }
-            }
             m_depth--;
-
-            // Get the previous state and remvoe it from the stack
-            state = state_stack.top();
-            path_hash = hash_stack.top();
-            state_stack.pop();
-            hash_stack.pop();
-
             if (m_tokens == NULL) {
                 break;
             }
@@ -373,34 +325,13 @@ int jsmn_parser::parse() {
                 return r;
             }
 
-            // We need to update the kv value and 
+            // We need to update the kv value and
             // update the path hash
             count++;
             if (m_toksuper != -1 && m_tokens != NULL) {
                 m_tokens[m_toksuper].size++;
             }
-
-            // NOTE: We need to add array indicies!
-            // To do this we need to keep track of the indicies for this array
-            // which implies a stack as lists might be nested in lists of objects
-            if(state == parse_state::LIST) {
-                do_list_values(path_hash, index, kv);
-                index++;
-            }
-            else {
-                // Get the hash value for this string
-                int start = m_tokens[m_token_next-1].start;
-                int end = m_tokens[m_token_next-1].end;
-                int len = end - start;
-                unsigned int hv = merge_hash(path_hash,hash(m_js.data() + start,len));
-                // Otherwise just add to the paths
-                path_holder p = {hv, m_depth, kv == kv_state::KEY, std::make_shared<std::vector<jsmntok_t *>>()};
-                p.list->push_back(&m_tokens[m_token_next-1]);
-                m_paths.emplace(hv,p);
-                path_hash = hv;
-            }
-        }
-        break;
+        } break;
 
         case '\t':
         case '\r':
@@ -411,6 +342,9 @@ int jsmn_parser::parse() {
             m_toksuper = m_token_next - 1;
             break;
         case ',':
+            if(m_tokens[m_toksuper].type == JSMN_ARRAY) {
+                m_tokens[m_toksuper].idx++;
+            }
             if (m_tokens != NULL && m_toksuper != -1 &&
                 m_tokens[m_toksuper].type != JSMN_ARRAY &&
                 m_tokens[m_toksuper].type != JSMN_OBJECT) {
@@ -428,6 +362,7 @@ int jsmn_parser::parse() {
                 }
 #endif
             }
+            // We need to update the relative index of anything in a list
             break;
 #ifdef JSMN_STRICT
         /* In strict mode primitives are: numbers and booleans */
@@ -467,21 +402,6 @@ int jsmn_parser::parse() {
             if (m_toksuper != -1 && m_tokens != NULL) {
                 m_tokens[m_toksuper].size++;
             }
-
-            if(state == parse_state::LIST) {
-                do_list_values(path_hash, index, kv);
-                index++;
-            }
-            else {
-                // Otherwise just add to the paths
-                path_holder p = {path_hash,m_depth, kv == kv_state::KEY, std::make_shared<std::vector<jsmntok_t *>>()};
-                p.list->push_back(&m_tokens[m_token_next-1]);
-                m_paths.emplace(path_hash,p);
-            }
-
-            // A numeric value is always a value because keys can only 
-            // be strings
-            kv = kv_state::START;
             break;
 
 #ifdef JSMN_STRICT
@@ -560,8 +480,8 @@ bool jsmn_parser::deserialise(const char *file_name) {
     if (m_length == 0 || size == 0) {
         return false;
     }
-    
-    // Read in the string 
+
+    // Read in the string
     char *js = new char[m_length + 1];
     size = fread(js, sizeof(char), m_length, fp);
     if (size == 0) {
@@ -629,27 +549,26 @@ void jsmn_parser::print_token(int idx) {
 
     std::cout << "start  :" << t->start << ", ";
     std::cout << "end    :" << t->end << ", ";
-    std::cout << "size   :" << t->size << ", "; 
+    std::cout << "size   :" << t->size << ", ";
     std::cout << "parent :" << t->parent << ", ";
 
     // copy the string into a buffer and print it
-    if(t->type == JSMN_STRING || t->type == JSMN_PRIMITIVE) {
+    if (t->type == JSMN_STRING || t->type == JSMN_PRIMITIVE) {
         size_t len = t->end - t->start;
         std::string str(m_js.data() + t->start, len);
-        std::cout << "value: " << "\"" << str << "\"" <<std::endl;
-    }
-    else {
+        std::cout << "value: " << "\"" << str << "\"" << std::endl;
+    } else {
         std::cout << std::endl;
     }
 }
 
-jsmn_parser::path_holder * jsmn_parser::get_path(struct jqpath * p) {
-    if(p) {
+jsmn_parser::path_holder *jsmn_parser::get_path(struct jqpath *p) {
+    if (p) {
         auto it = m_paths.find(p->hash);
-        if(it != m_paths.end()) {
-            if(it->second.depth == p->depth) {
-                return &it->second; 
-            } 
+        if (it != m_paths.end()) {
+            if (it->second.depth == p->depth) {
+                return &it->second;
+            }
         }
     }
 
