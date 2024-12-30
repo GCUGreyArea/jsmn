@@ -10,6 +10,7 @@ CXX=g++
 # unless you know what your doing!
 TARGET  = lib$(NAME).so
 TEST	= test_$(NAME)
+BENCH   = bench_$(NAME)
 
 # Yacc file go first because they generat headers
 YACSRC = $(patsubst %.y,%.tab.c,$(wildcard src/*.y))
@@ -29,8 +30,16 @@ TESTCSRC   := $(wildcard test/*.c)
 TESTOBJ	   := $(patsubst %.cpp,build/%.o,$(TESTCXXSRC))
 TESTOBJ	   += $(patsubst %.c,build/%.o,$(TESTCSRC))
 
+# Benchmark code
+BENCHCXXSRC := $(wildcard benchmark/*.cpp)
+BENCHCSRC   := $(wildcard benchmark/*.c)
+BENCHOBJ    := $(patsubst %.cpp,build/%.o,$(BENCHCXXSRC))
+BENCHOBJ    += $(patsubst %.c,build/%.o,$(BENCHCSRC))
+
+# Build targets
 BUILDTARGET = build/$(TARGET)
 TESTTARGET  = build/$(TEST)
+BENCHTARGET = build/$(BENCH)
 
 # Force rebuild of flex and bison files each time
 all: $(BUILDTARGET)
@@ -39,12 +48,20 @@ all: $(BUILDTARGET)
 test: $(BUILDTARGET) $(TESTTARGET)
 	$(TESTTARGET)
 
+
+bench: $(BUILDTARGET) $(BENCHTARGET)
+	$(BENCHTARGET)
+
 # Dynamic Build Rules
 $(BUILDTARGET) : build $(OBJ)
 	$(CXX) $(CXXFLAGS) -fPIC -Lbuild -Isrc $(OBJ) -shared  -o $(BUILDTARGET)
 
 $(TESTTARGET): build $(TESTOBJ)
 	$(CXX) $(CXXFLAGS) -Lbuild -Isrc -Itest $(TESTOBJ) -ljsmn -lgtest -lpthread -lglog -o $(TESTTARGET) -Wl,-rpath,build
+
+$(BENCHTARGET): build $(BENCHOBJ)
+	$(CXX) $(CXXFLAGS) -Lbuild -Iback -Isrc -Ibenchmark $(BENCHOBJ) -ljsmn -lbenchmark -lpthread -o $(BENCHTARGET) -Wl,-rpath,build
+
 
 cmd_example: $(BUILDTARGET)
 	g++ -std=c++17 -Wall -Isrc -c example/cmd_example.cpp -o cmd_example.o
@@ -53,7 +70,7 @@ cmd_example: $(BUILDTARGET)
 
 jsondump: $(BUILDTARGET)
 	g++ -std=c++17 -g -Wall -Isrc -c example/jsondump.cpp -o jsondump.o
-	g++ -std=c++17 -g -Lbuild -ljsmn -o jsondump jsondump.o -Wl,-rpath,build
+	g++ -std=c++17 -g -Lbuild -o jsondump jsondump.o -ljsmn  -Wl,-rpath,build
 	rm -f jsondump.o
 
 simple: $(BUILDTARGET)
@@ -64,6 +81,7 @@ simple: $(BUILDTARGET)
 build:
 	mkdir -p build/src
 	mkdir -p build/test
+	mkdir -p build/benchmark
 
 src/%.tab.c: src/*.y
 	bison -d $< -o $@
@@ -72,10 +90,10 @@ src/%.lex.c: src/%.l
 	flex -o $@ $<
 
 build/%.o: %.c
-	$(CC) -c $(CFLAGS) -Lbuild -Isrc -Itest $< -o $@
+	$(CC) -c $(CFLAGS) -Lbuild -Isrc -Itest -Iback $< -o $@
 
 build/%.o: %.cpp
-	$(CXX) -c $(CXXFLAGS) -Lbuild -Isrc -Itest -c $< -o $@
+	$(CXX) -c $(CXXFLAGS) -Lbuild -Isrc -Itest -Iback -c $< -o $@
 
 clean:
 	rm -rf build cmd_example jsondump simple test.bin tests src/*.tab.h 
