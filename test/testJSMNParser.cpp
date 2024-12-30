@@ -106,7 +106,7 @@ TEST(JSMNParser, testLargeFileRead) {
     jsmn_parser p(buffer.c_str());
 
     unsigned int ret = p.parse();
-    ASSERT_EQ(ret,1252988);
+    ASSERT_EQ(ret,1252990);
 }
 
 TEST(JSMNParser, testLargeFileReadSerialise) {
@@ -127,7 +127,7 @@ TEST(JSMNParser, testLargeFileReadSerialise) {
     jsmn_parser p(buffer.c_str());
 
     unsigned int ret = p.parse();
-    ASSERT_EQ(ret,1252988);
+    ASSERT_EQ(ret,1252990);
 
     // Serialise 
     p.serialise("test/resources/outfile.bin");
