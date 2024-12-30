@@ -4,7 +4,7 @@
 #include <iostream>
 #include <string>
 
-#include "jsmn.h"
+#include <jsmn.h>
 
 static void BM_RunJSMNCParser(benchmark::State &state) {
 
