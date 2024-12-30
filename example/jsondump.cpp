@@ -5,6 +5,8 @@
 #include <string.h>
 #include <unistd.h>
 
+#include <iostream>
+
 /*
  * An example of reading JSON from stdin and printing its content to stdout.
  * The output looks like YAML, but I'm not sure if it's really compatible.
@@ -55,8 +57,10 @@ static int dump(const char *m_js, jsmntok_t *t, size_t count, int indent) {
 }
 
 int main(int argc, char **argv) {
-    if (argc == 1)
+    if (argc == 1) {
+        std::cerr << "Please supply a JSON string to parse" << std::endl;
         return -1;
+    }
 
     int r;
 
