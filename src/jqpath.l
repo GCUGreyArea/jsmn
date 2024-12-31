@@ -49,7 +49,7 @@
 [0-9]+\.[0-9]+              { capture = yytext; add_float_element(capture); return FLOAT;}
 [0-9]+                      { capture = yytext; add_int_element(capture); return INT;}
 [a-zA-Z][a-zA-Z0-9]+        { capture = yytext; add_label_to_path(yytext); return LABEL;}
-[ \t]                       { }   /* skip whitespace which is not part of a string */
+[ \t]                       { } /* skip whitespace which is not part of a string */
 [\r\n]                      { } /* count any characters that are not counted by other rules */
 .                           { } /* count any characters that are not counted by other rules */
 
