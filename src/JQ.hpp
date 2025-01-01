@@ -6,12 +6,17 @@
 #include "jqpath.h"
 #include "string_funcs.h"
 
+
+struct jsmntok;
+typedef struct jsmntok jsmntok_t; 
+
 class JQ {
 public:
     JQ();
     JQ(struct jqpath& val);
     JQ(int depth, unsigned int hash, span sp);
     JQ(int depth, unsigned int hash, const char * str);
+    JQ(int depth, unsigned int hash, jsmntok_t * tk, const char * js);
     ~JQ();
 
     bool operator==(struct jqpath &path);
@@ -35,6 +40,8 @@ private:
     jqvalue_u val;          //! The value
     jqvaltype_e type;       //! The value type
     jq_operator op;         //! The opeartor
+    jsmntok_t * tk;         //! Token ascociated with this value
+    const char * js;        //! JSON string - cludge! 
 };
 
 #endif // !JQ_PATH
