@@ -25,4 +25,6 @@ TEST(JQPathJSMN, testJSMNJQPathStringValues) {
 
     auto * np = p.get_path(path);
     ASSERT_TRUE(np != nullptr);
+
+    ASSERT_TRUE(*np == "\"value 2\"");
 }
