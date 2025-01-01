@@ -550,19 +550,19 @@ void jsmn_parser::render(int depth, unsigned int hash_value,
                     switch(m_tokens[token].type) {
                         case JSMN_STRING: {
                             // We need to add this to the path value
-                            int len = m_tokens[token].end - m_tokens[token].start;
-                            JQ path1(depth,p1_hash,span{m_tokens[token].start,len});
+                            // int len = m_tokens[token].end - m_tokens[token].start;
+                            JQ path1(depth,p1_hash,&m_tokens[token],m_js.c_str());
                             m_paths.emplace(p1_hash,path1);
-                            JQ path2(depth,p2_hash,span{m_tokens[token].start,len});
+                            JQ path2(depth,p2_hash,&m_tokens[token],m_js.c_str());
                             m_paths.emplace(p2_hash,path2);
                         }
                         break;
 
                         case JSMN_PRIMITIVE:{
-                            int len = m_tokens[token].end - m_tokens[token].start;
-                            JQ path1(depth,p1_hash,span{m_tokens[token].start,len});
+                            // int len = m_tokens[token].end - m_tokens[token].start;
+                            JQ path1(depth,p1_hash,&m_tokens[token],m_js.c_str());
                             m_paths.emplace(p1_hash,path1);
-                            JQ path2(depth,p2_hash,span{m_tokens[token].start,len});
+                            JQ path2(depth,p2_hash,&m_tokens[token],m_js.c_str());
                             m_paths.emplace(p2_hash,path2);                           
                         }
                         break;
