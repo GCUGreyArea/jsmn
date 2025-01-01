@@ -21,6 +21,7 @@ enum jq_operator {
 };
 
 union jqvalue_u {
+    bool bool_val;
     int int_val;
     float float_val;
     char * string_val;
@@ -30,7 +31,8 @@ enum jqvaltype_e {
     JQ_NO_VAL,
     JQ_INT_VAL,
     JQ_FLOAT_VAL,
-    JQ_STRING_VAL
+    JQ_STRING_VAL,
+    JQ_BOOL_VAL
 };
 
 struct jqvalue {
