@@ -22,6 +22,7 @@ public:
     bool operator==(struct jqpath &path);
     bool operator==(int val);
     bool operator==(float val);
+    bool operator==(bool val);
     bool operator==(const char * str);
     bool operator==(std::string str);
 
@@ -31,6 +32,7 @@ public:
 
 
 protected:
+    void render_number();
 
 private:
     unsigned int hash;      //! The hash of the path
@@ -39,7 +41,6 @@ private:
     span sp;                //! Place in the string for the value
     jqvalue_u val;          //! The value
     jqvaltype_e type;       //! The value type
-    jq_operator op;         //! The opeartor
     jsmntok_t * tk;         //! Token ascociated with this value
     const char * js;        //! JSON string - cludge! 
 };
