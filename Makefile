@@ -61,6 +61,9 @@ simple: $(BUILDTARGET)
 	g++ -std=c++17 -g -Lbuild -o simple simple.o -ljsmn -Wl,-rpath,build
 	rm -f simple.o
 
+doc:
+	cd docs/Doxygen && doxygen Doxyfile
+
 build:
 	mkdir -p build/src
 	mkdir -p build/test
@@ -78,7 +81,7 @@ build/%.o: %.cpp
 	$(CXX) -c $(CXXFLAGS) -Lbuild -Isrc -Itest -c $< -o $@
 
 clean:
-	rm -rf build cmd_example jsondump simple test.bin tests src/*.tab.h 
+	rm -rf build cmd_example jsondump simple test.bin tests src/*.tab.h  docs/html
 
 .PRECIOUS: *.tab.c 
 
