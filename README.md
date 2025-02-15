@@ -4,6 +4,8 @@
 
 - [JQ Paths](https://jqlang.org/manual/)
 - [JSMN C Library](https://github.com/zserge/jsmn)
+- [Path design](docs/path-design.md)
+- [Render design](docs/render-design.md)
 
 ## Introduction
 
@@ -75,6 +77,10 @@ jsmn_parser(const char *js = "{}", unsigned int mull = 2)
 ```
 
 Dynamic memory management in the puer C++ model has a cost as the content of the previous array need to be copied to a new array, however memory is only bounded by that which is availible to the compiler, and hence the program. `realloc` requires that a block of contiguous memory is availible to realocate to, which is not allways possible with very large `JSON` files.
+
+## Code documentation
+
+You can compile the code documentation through the `Doxygen` utility by running `make doc`. 
 
 ## TODO
 
