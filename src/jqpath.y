@@ -46,7 +46,7 @@ complete_path:
 ;
 
 array_def: 
-  OPEN_ARR CLOSE_ARR      {/*add_string_to_path("[]",strlen("[]"));*/}
+  OPEN_ARR CLOSE_ARR      {path.hash = merge_hash(path.hash,hash("[]",2));}
 | OPEN_ARR INT CLOSE_ARR  {add_index_to_path(intval,last_int_len);}
 
 expression: 
@@ -72,6 +72,11 @@ void add_index_to_path(int idx, int idx_len) {
     path.hash = merge_hash(path.hash,hash(val,strlen(val)));
     free(val);
 }
+// void add_string_to_path(char * str, int len) {
+    
+// }
+
+
 
 static inline struct jqpath * replicate_path() {
     struct jqpath * p = malloc(sizeof(struct jqpath));
