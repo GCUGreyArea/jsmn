@@ -499,10 +499,10 @@ void jsmn_parser::print_token(int idx) {
         break;
     }
 
-    std::cout << "start  :" << t->start << ", ";
-    std::cout << "end    :" << t->end << ", ";
-    std::cout << "size   :" << t->size << ", "; 
-    std::cout << "parent :" << t->parent << ", ";
+    std::cout << "start : "  << t->start  <<  ", ";
+    std::cout << "end : "    << t->end    <<  ", ";
+    std::cout << "size : "   << t->size   <<  ", "; 
+    std::cout << "parent : " << t->parent <<  ", ";
 
     // copy the string into a buffer and print it
     if(t->type == JSMN_STRING || t->type == JSMN_PRIMITIVE) {
@@ -523,8 +523,7 @@ void jsmn_parser::print_token(int idx) {
  * @param token
  */
 
-void jsmn_parser::render(int depth, unsigned int hash_value,
-                         unsigned int &token, kv_state kv) {
+void jsmn_parser::render(int depth, unsigned int hash_value, unsigned int &token, kv_state kv) {
 
     while (token < m_token_next) {
         switch (m_tokens[token].type) {
@@ -538,11 +537,6 @@ void jsmn_parser::render(int depth, unsigned int hash_value,
             case JSMN_ARRAY: {
                 unsigned int size = m_tokens[token].size;
                 depth++;    // Up the depth because an array is an objet
-
-                // std::string p1 = "[]";
-                // unsigned int p1_hash = merge_hash(hash_value,hash((char*) p1.c_str(),p1.length()));
-                // JQ path1(depth,p1_hash,&m_tokens[token],m_js.c_str());
-                // m_paths.emplace(p1_hash,path1);
                 token++;    // Move to the next token so we can process the list
 
                 for(unsigned int index=0; index < size; token++,index++) {
@@ -551,16 +545,12 @@ void jsmn_parser::render(int depth, unsigned int hash_value,
                     switch(m_tokens[token].type) {
                         case JSMN_STRING: {
                             // We need to add this to the path value
-                            // int len = m_tokens[token].end - m_tokens[token].start;
                             JQ path2(depth,p2_hash,&m_tokens[token],m_js.c_str());
                             m_paths.emplace(p2_hash,path2);
                         }
                         break;
 
                         case JSMN_PRIMITIVE:{
-                            // int len = m_tokens[token].end - m_tokens[token].start;
-                            // JQ path1(depth,p1_hash,&m_tokens[token],m_js.c_str());
-                            // m_paths.emplace(p1_hash,path1);
                             JQ path2(depth,p2_hash,&m_tokens[token],m_js.c_str());
                             m_paths.emplace(p2_hash,path2);                           
                         }
@@ -582,7 +572,7 @@ void jsmn_parser::render(int depth, unsigned int hash_value,
                     int len = m_tokens[token].end - m_tokens[token].start;
                     std::string str(m_js.data() + m_tokens[token].start, len);
                     hash_value = merge_hash(hash_value,hash(str.c_str(),str.length()));
-                    JQ path(depth,hash_value,str.c_str());
+                    JQ path(depth,hash_value,&m_tokens[token],m_js.c_str());
                     m_paths.emplace(hash_value,path);
                     token++;
                 } else if (kv == kv_state::KEY) {
@@ -590,6 +580,9 @@ void jsmn_parser::render(int depth, unsigned int hash_value,
                     int len = m_tokens[token].end - m_tokens[token].start;
                     std::string str(m_js.c_str() + m_tokens[token].start, len);
                     hash_value = merge_hash(hash_value,hash(str.c_str(), len));
+                    // Here we need to add the value token rather than the key so it can be search
+                    JQ path(depth,hash_value,&m_tokens[token+1],m_js.c_str());
+                    m_paths.emplace(hash_value,path);
                     token++; // Move to the next token for the next pass
                     kv++;    // move on the flag so we can porcess the value.
                 }
@@ -604,7 +597,7 @@ void jsmn_parser::render(int depth, unsigned int hash_value,
             break;
 
             case JSMN_UNDEFINED:
-                throw std::runtime_error("undefined token");
+                throw std::runtime_error("undefined token type");
 
             default:
                 break;
@@ -628,4 +621,9 @@ JQ * jsmn_parser::get_path(struct jqpath * p) {
     }
 
     return nullptr;
+}
+
+std::string  jsmn_parser::extract_string(jsmntok_t *t) {
+    int len = t->end - t->start;
+    return std::string(m_js.data() + t->start, len);
 }
