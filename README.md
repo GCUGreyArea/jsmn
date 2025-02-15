@@ -7,9 +7,32 @@
 - [Path design](docs/path-design.md)
 - [Render design](docs/render-design.md)
 
+## Dependancies
+
+- [Google Test Framework](https://github.com/google/googletest)
+- [GNUd Bison](https://www.gnu.org/software/bison/)
+- [GNU Flex](https://gothub.projectsegfau.lt/westes/flex/)
+
+Google test only needs to be installed if you are planning on building and running the unit tests. 
+
+Flex and Bison can be installed with `apt`
+
+```bash
+sudo apt install flex 
+sudo apt install bison
+```
+
 ## Introduction
 
 This is a prot of `JSMN` C library to C++. The ongoing work is to implement full `JQ path` compatibility so that the structures representing parsed `JSON` can be searched using `JQ path` syntax. In order to achieve this end the resulting tokens array can be rendered to a `C++` map that will corespond to the hash value parsed by the `JQ Parser`, which is written using `Flex` and `Bison`.
+
+## Build and run unit tests
+
+Unit tests can be run with
+
+```bash
+make test
+```
 
 ## Creating and using a parser
 
