@@ -1,10 +1,6 @@
-JSMN
-====
+# JSMN C++
 
-Update
-------
-
-This is a basic prot of JSMN to c++. The ongoing work is to implement full `JQ path` compatibility so that the structures representing parsed `JSON` can ge searched using `JQ path` syntax.
+This is a prot of `JSMN` to c++. The ongoing work is to implement full `JQ path` compatibility so that the structures representing parsed `JSON` can be searched using `JQ path` syntax. In order to achieve this end the rezuling tokens array can be rendered to a c++ map that will corespond to the hash value parsed by the JQ Parser, which is written using `Flex` and `Bison`
 
 There is a [TODO](todo.md) list of things that need to be completed in order for this code to function.
 
@@ -90,15 +86,14 @@ Usage
 
 Download `jsmn.h`, include it, done.
 
+```cpp
+#include "jsmn.hpp"
+
+
 ```
-#include "jsmn.h"
 
 ...
 jsmn_parser p;
-jsmntok_t t[128]; /* We expect no more than 128 JSON tokens */
-
-jsmn_init(&p);
-r = jsmn_parse(&p, s, strlen(s), t, 128); // "s" is the char array holding the json content
 ```
 
 Since jsmn is a single-header, header-only library, for more complex use cases
