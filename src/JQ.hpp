@@ -28,6 +28,7 @@ public:
 
     unsigned int get_depth() {return depth;}
     unsigned int get_hash() {return hash;}
+    jsmntok_t * get_token() {return tk;}
     bool is_rendered() {return rendered;}
 
 

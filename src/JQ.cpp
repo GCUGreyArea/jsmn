@@ -3,7 +3,6 @@
 #include <cstring>
 #include <string>
 
-
 JQ::JQ()
     : hash(0), 
       depth(0), 
@@ -72,7 +71,7 @@ JQ::JQ(int depth, unsigned int hash, jsmntok_t * tk, const char * js)
       js(js) {}
 
 JQ::~JQ() {
-    if (type == JQ_STRING_VAL) {
+    if (type == JQ_STRING_VAL && val.string_val != nullptr) {
         kill_string(val.string_val);
     }
 }
