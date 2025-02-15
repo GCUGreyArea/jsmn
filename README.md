@@ -71,8 +71,14 @@ Dynamic memory management in the puer C++ model has a cost as the content of the
 
 ## TODO
 
+### Full JQ Path functionality 
+
 The functionality to search using an empty array has not been implemented due to the performance overhead of doing so.
 
 ```bash
 .name[] = "barry"
 ```
+
+### Parser reentrancy
+
+The current `Flex` / `Bison` parser for the `JQ path` search syntax, because it declares glob assets, is not currently reentrant. This is easily remedied by moveing all values into a dynamically assigned structre to maintain state.
