@@ -116,3 +116,7 @@ would produce
 ### Parser reentrancy
 
 The current `Flex` / `Bison` parser for the `JQ path` search syntax, because it declares glob assets, is not currently reentrant. This is easily remedied by moveing all values into a dynamically assigned structre to maintain state.
+
+### Correct numeric equality
+
+Currently while the `JQ path` parser renders all numeric values to their natural state (`1.1` becomes a `float` and `1` becomes an `integer`. As importantly `0001` and `1` are rendered into `1` and are equivolent), the `JSMN` implementation does not do this yet.
