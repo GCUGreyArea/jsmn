@@ -1,15 +1,11 @@
 %{
     /** 
     ** This is a basic lexer for JQ Path strings 
-    ** We now need a parser to make sure everything 
-    ** is parsed in the correct order and to do error 
-    ** checking on input strings.
     **/
 
     #include <stdio.h>
     #include "jqpath.h"
     #include "jqpath.tab.h"
-
 
     char * capture = NULL;
 
@@ -73,7 +69,6 @@ int add_string_element(char * el) {
     strval = el;
     return 0;
 }
-
 
 void add_label_to_path(char * label) {
     path.hash = merge_hash(path.hash,hash(label,strlen(label)));
