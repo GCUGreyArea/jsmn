@@ -159,7 +159,21 @@ bool JQ::operator==(const char *str) {
                 case JSMN_PRIMITIVE:
                     return false;
 
-                case JSMN_ARRAY:
+                case JSMN_ARRAY: {
+                    jsmntok_t * tkn = tk+1; 
+                    int len = strlen(str);
+                    for(int i=0;i<tk->size;i++) {
+                        if(tkn[i].type == JSMN_STRING) {
+                            int len1 = (tkn[i].end+1) - (tkn[i].start-1);
+                            if(len1 == len) {
+                                if(strncmp(&js[tkn[i].start-1],str,len) == 0) {
+                                    return true;
+                                }
+                            }
+                       }
+                    }
+                }
+                break;
                 case JSMN_OBJECT:
                     throw std::runtime_error("unsupported comparison");  
 
