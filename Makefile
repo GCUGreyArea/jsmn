@@ -47,18 +47,18 @@ $(TESTTARGET): build $(TESTOBJ)
 	$(CXX) $(CXXFLAGS) -Lbuild -Isrc -Itest $(TESTOBJ) -ljsmn -lgtest -lpthread -lglog -o $(TESTTARGET) -Wl,-rpath,build
 
 cmd_example: $(BUILDTARGET)
-	g++ -std=c++17 -Wall -Isrc -c example/cmd_example.cpp -o cmd_example.o
-	g++ -std=c++17 -Lbuild -ljsmn -o cmd_example cmd_example.o -Wl,-rpath,build
+	g++ -std=c++17 -g -Wall -Isrc -c examples/cmd_example.cpp -o cmd_example.o
+	g++ -std=c++17 -g -Lbuild -o build/cmd_example cmd_example.o -ljsmn -Wl,-rpath,build
 	rm -f cmd_example.o
 
 jsondump: $(BUILDTARGET)
-	g++ -std=c++17 -g -Wall -Isrc -c example/jsondump.cpp -o jsondump.o
-	g++ -std=c++17 -g -Lbuild -ljsmn -o jsondump jsondump.o -Wl,-rpath,build
+	g++ -std=c++17 -g -Wall -Isrc -c examples/jsondump.cpp -o jsondump.o
+	g++ -std=c++17 -g -Lbuild -o jsondump jsondump.o -ljsmn -Wl,-rpath,build
 	rm -f jsondump.o
 
 simple: $(BUILDTARGET)
-	g++ -std=c++17 -g -Wall -Isrc -c example/simple.cpp -o simple.o
-	g++ -std=c++17 -g -Lbuild -ljsmn -o simple simple.o -Wl,-rpath,build
+	g++ -std=c++17 -g -Wall -Isrc -c examples/simple.cpp -o simple.o
+	g++ -std=c++17 -g -Lbuild -o simple simple.o -ljsmn -Wl,-rpath,build
 	rm -f simple.o
 
 build:
