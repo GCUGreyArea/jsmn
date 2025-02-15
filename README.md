@@ -1,5 +1,12 @@
 # JSMN C++
 
+## References
+
+- [JQ Paths](https://jqlang.org/manual/)
+- [JSMN C Library](https://github.com/zserge/jsmn)
+
+## Introduction
+
 This is a prot of `JSMN` C library to C++. The ongoing work is to implement full `JQ path` compatibility so that the structures representing parsed `JSON` can be searched using `JQ path` syntax. In order to achieve this end the resulting tokens array can be rendered to a `C++` map that will corespond to the hash value parsed by the `JQ Parser`, which is written using `Flex` and `Bison`.
 
 ## Creating and using a parser
@@ -76,7 +83,28 @@ Dynamic memory management in the puer C++ model has a cost as the content of the
 The functionality to search using an empty array has not been implemented due to the performance overhead of doing so.
 
 ```bash
-.name[] = "barry"
+.name[] = "Barry"
+```
+
+where the JSON string might be
+
+```json
+{"name":["Frank","John", "Fred","Barry"]}
+```
+
+Where using JQ 
+
+```bash 
+echo '{"name":["Frank","John", "Fred","Barry"]}' | jq .name[] 
+```
+
+would produce
+
+```bash
+"Frank"
+"John"
+"Fred"
+"Barry"
 ```
 
 ### Parser reentrancy
