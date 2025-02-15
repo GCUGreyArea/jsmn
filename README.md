@@ -10,7 +10,7 @@
 ## Dependancies
 
 - [Google Test Framework](https://github.com/google/googletest)
-- [GNUd Bison](https://www.gnu.org/software/bison/)
+- [GNU Bison](https://www.gnu.org/software/bison/)
 - [GNU Flex](https://gothub.projectsegfau.lt/westes/flex/)
 
 Google test only needs to be installed if you are planning on building and running the unit tests. 
