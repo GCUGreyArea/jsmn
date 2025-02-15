@@ -1,186 +1,78 @@
 # JSMN C++
 
-This is a prot of `JSMN` to c++. The ongoing work is to implement full `JQ path` compatibility so that the structures representing parsed `JSON` can be searched using `JQ path` syntax. In order to achieve this end the rezuling tokens array can be rendered to a c++ map that will corespond to the hash value parsed by the JQ Parser, which is written using `Flex` and `Bison`
+This is a prot of `JSMN` C library to C++. The ongoing work is to implement full `JQ path` compatibility so that the structures representing parsed `JSON` can be searched using `JQ path` syntax. In order to achieve this end the resulting tokens array can be rendered to a `C++` map that will corespond to the hash value parsed by the `JQ Parser`, which is written using `Flex` and `Bison`.
 
-There is a [TODO](todo.md) list of things that need to be completed in order for this code to function.
+## Creating and using a parser
 
-The reset of this documen remains unchanged and wil be updated as work progresses...
+A number of examples are provided in the `examples` directory. The most basic example can be foudn in [cmd_example.cpp](examples/cmd_example.cpp), This code shows how to use of the parser, along with how to serialise and deserialise parser data. This program can be built by running `make cmd_example` from the main project directory.
 
-[![Build Status](https://travis-ci.org/zserge/jsmn.svg?branch=master)](https://travis-ci.org/zserge/jsmn)
+You can run the command test program with the following command
 
-jsmn (pronounced like 'jasmine') is a minimalistic JSON parser in C.  It can be
-easily integrated into resource-limited or embedded projects.
-
-You can find more information about JSON format at [json.org][1]
-
-Library sources are available at https://github.com/zserge/jsmn
-
-The web page with some information about jsmn can be found at
-[http://zserge.com/jsmn.html][2]
-
-Philosophy
-----------
-
-Most JSON parsers offer you a bunch of functions to load JSON data, parse it
-and extract any value by its name. jsmn proves that checking the correctness of
-every JSON packet or allocating temporary objects to store parsed JSON fields
-often is an overkill. 
-
-JSON format itself is extremely simple, so why should we complicate it?
-
-jsmn is designed to be	**robust** (it should work fine even with erroneous
-data), **fast** (it should parse data on the fly), **portable** (no superfluous
-dependencies or non-standard C extensions). And of course, **simplicity** is a
-key feature - simple code style, simple algorithm, simple integration into
-other projects.
-
-Features
---------
-
-* compatible with C89
-* no dependencies (even libc!)
-* highly portable (tested on x86/amd64, ARM, AVR)
-* about 200 lines of code
-* extremely small code footprint
-* API contains only 2 functions
-* no dynamic memory allocation
-* incremental single-pass parsing
-* library code is covered with unit-tests
-
-Design
-------
-
-The rudimentary jsmn object is a **token**. Let's consider a JSON string:
-
-	'{ "name" : "Jack", "age" : 27 }'
-
-It holds the following tokens:
-
-* Object: `{ "name" : "Jack", "age" : 27}` (the whole object)
-* Strings: `"name"`, `"Jack"`, `"age"` (keys and some values)
-* Number: `27`
-
-In jsmn, tokens do not hold any data, but point to token boundaries in JSON
-string instead. In the example above jsmn will create tokens like: Object
-[0..31], String [3..7], String [12..16], String [20..23], Number [27..29].
-
-Every jsmn token has a type, which indicates the type of corresponding JSON
-token. jsmn supports the following token types:
-
-* Object - a container of key-value pairs, e.g.:
-	`{ "foo":"bar", "x":0.3 }`
-* Array - a sequence of values, e.g.:
-	`[ 1, 2, 3 ]`
-* String - a quoted sequence of chars, e.g.: `"foo"`
-* Primitive - a number, a boolean (`true`, `false`) or `null`
-
-Besides start/end positions, jsmn tokens for complex types (like arrays
-or objects) also contain a number of child items, so you can easily follow
-object hierarchy.
-
-This approach provides enough information for parsing any JSON data and makes
-it possible to use zero-copy techniques.
-
-Usage
------
-
-Download `jsmn.h`, include it, done.
-
-```cpp
-#include "jsmn.hpp"
-
-
+```bash
+./build/cmd_example '{"name":"barry"}' ".name"
 ```
 
-...
-jsmn_parser p;
+You should see the output
+
+```bash
+Parsed tokens: 3
+Token: 0 type: object, start : 0, end : 16, size : 1, parent : -1, 
+Token: 1 type: string, start : 2, end : 6, size : 1, parent : 0, value: "name"
+Token: 2 type: string, start : 9, end : 14, size : 0, parent : 1, value: "barry"
+
+Deserialised tokens: 3
+Token: 0 type: object, start : 0, end : 16, size : 1, parent : -1, 
+Token: 1 type: string, start : 2, end : 6, size : 1, parent : 0, value: "name"
+Token: 2 type: string, start : 9, end : 14, size : 0, parent : 1, value: "barry"
+
+Path value for .name  : barry
 ```
 
-Since jsmn is a single-header, header-only library, for more complex use cases
-you might need to define additional macros. `#define JSMN_STATIC` hides all
-jsmn API symbols by making them static. Also, if you want to include `jsmn.h`
-from multiple C files, to avoid duplication of symbols you may define  `JSMN_HEADER` macro.
+## Library functionality
 
+Most of the functionality has been moved into a `.cpp` file, but there is no reason that it can't be part of a single `.h` or `.hpp` file. None of the alogoythms that parse `JSON` have been altered, but aditional functionality has been addded..
+
+### Dynamic memory management
+
+The parser now has dynamic memory managment through `new`. I debated using `realloc` which is easier to implement and significantly faster, but from a purely `C++` perspective is a `C` function. REimplementing that behaviour (if it is required) is simple, and only requires modification to two functions.
+
+```c++
+jsmntok_t *jsmn_parser::jsmn_alloc_token() {
+    jsmntok_t *tok;
+
+    // Over the allocated size, realloc.
+    if (m_token_next >= m_num_tokens) {
+        m_tokens = (jsmntok_t*) realloc(m_tokens,sizeof(jsmntok_t) * m_num_tokens *m_mull);
+    }
+
+    // ASsign the token and return
+    tok = &m_tokens[m_token_next++];
+    tok->start = tok->end = -1;
+    tok->size = 0;
+#ifdef JSMN_PARENT_LINKS
+    tok->parent = -1;
+#endif
+    return tok;
+}
+
+jsmn_parser(const char *js = "{}", unsigned int mull = 2)
+    : m_pos(0), 
+      m_token_next(0), 
+      m_toksuper(-1),
+      m_tokens((jsmntok_t*) malloc(sizeof(jsmntok_t(def_size)))), 
+      m_num_tokens(def_size),
+      m_js(js), 
+      m_length(m_js.length()), 
+      m_mull(mull), 
+      m_depth(0) {}
 ```
-/* In every .c file that uses jsmn include only declarations: */
-#define JSMN_HEADER
-#include "jsmn.h"
 
-/* Additionally, create one jsmn.c file for jsmn implementation: */
-#include "jsmn.h"
+Dynamic memory management in the puer C++ model has a cost as the content of the previous array need to be copied to a new array, however memory is only bounded by that which is availible to the compiler, and hence the program. `realloc` requires that a block of contiguous memory is availible to realocate to, which is not allways possible with very large `JSON` files.
+
+## TODO
+
+The functionality to search using an empty array has not been implemented due to the performance overhead of doing so.
+
+```bash
+.name[] = "barry"
 ```
-
-API
----
-
-Token types are described by `jsmntype_t`:
-
-	typedef enum {
-		JSMN_UNDEFINED = 0,
-		JSMN_OBJECT = 1 << 0,
-		JSMN_ARRAY = 1 << 1,
-		JSMN_STRING = 1 << 2,
-		JSMN_PRIMITIVE = 1 << 3
-	} jsmntype_t;
-
-**Note:** Unlike JSON data types, primitive tokens are not divided into
-numbers, booleans and null, because one can easily tell the type using the
-first character:
-
-* <code>'t', 'f'</code> - boolean 
-* <code>'n'</code> - null
-* <code>'-', '0'..'9'</code> - number
-
-Token is an object of `jsmntok_t` type:
-
-	typedef struct {
-		jsmntype_t type; // Token type
-		int start;       // Token start position
-		int end;         // Token end position
-		int size;        // Number of child (nested) tokens
-	} jsmntok_t;
-
-**Note:** string tokens point to the first character after
-the opening quote and the previous symbol before final quote. This was made 
-to simplify string extraction from JSON data.
-
-All job is done by `jsmn_parser` object. You can initialize a new parser using:
-
-	jsmn_parser parser;
-	jsmntok_t tokens[10];
-
-	jsmn_init(&parser);
-
-	// m_js - pointer to JSON string
-	// tokens - an array of tokens available
-	// 10 - number of tokens available
-	jsmn_parse(&parser, m_js, strlen(m_js), tokens, 10);
-
-This will create a parser, and then it tries to parse up to 10 JSON tokens from
-the `m_js` string.
-
-A non-negative return value of `jsmn_parse` is the number of tokens actually
-used by the parser.
-Passing NULL instead of the tokens array would not store parsing results, but
-instead the function will return the number of tokens needed to parse the given
-string. This can be useful if you don't know yet how many tokens to allocate.
-
-If something goes wrong, you will get an error. Error will be one of these:
-
-* `JSMN_ERROR_INVAL` - bad token, JSON string is corrupted
-* `JSMN_ERROR_NOMEM` - not enough tokens, JSON string is too large
-* `JSMN_ERROR_PART` - JSON string is too short, expecting more JSON data
-
-If you get `JSMN_ERROR_NOMEM`, you can re-allocate more tokens and call
-`jsmn_parse` once more.  If you read json data from the stream, you can
-periodically call `jsmn_parse` and check if return value is `JSMN_ERROR_PART`.
-You will get this error until you reach the end of JSON data.
-
-Other info
-----------
-
-This software is distributed under [MIT license](http://www.opensource.org/licenses/mit-license.php),
- so feel free to integrate it in your commercial products.
-
-[1]: http://www.json.org/
-[2]: http://zserge.com/jsmn.html
