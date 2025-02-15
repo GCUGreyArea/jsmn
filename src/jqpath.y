@@ -39,7 +39,7 @@ path:
 ;
 
 complete_path: 
-  DOT LABEL                             { /* add_string_to_path(strval,strlen(strval)); */ }
+  DOT LABEL                             { /* add_string_to_path(strval,strlen(strval));*/  }
 | DOT LABEL array_def                   {                                         }   
 | DOT LABEL array_def complete_path     { /* printf("parse-ARR\n"); */ }
 | DOT LABEL complete_path               { /* printf("complex complete path\n"); */}
@@ -72,11 +72,6 @@ void add_index_to_path(int idx, int idx_len) {
     path.hash = merge_hash(path.hash,hash(val,strlen(val)));
     free(val);
 }
-// void add_string_to_path(char * str, int len) {
-    
-// }
-
-
 
 static inline struct jqpath * replicate_path() {
     struct jqpath * p = malloc(sizeof(struct jqpath));
@@ -90,6 +85,11 @@ static inline struct jqpath * replicate_path() {
     p->depth = path.depth;
     p->value.type = path.value.type;
     p->rendered = false;
+
+    // There is no operator '.name' rather than '.name = value'
+    if(p->op == JQ_NOT_SET) {
+      return p;
+    }
 
     switch(p->value.type) {
       case JQ_STRING_VAL:
