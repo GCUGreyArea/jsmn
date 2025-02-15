@@ -101,7 +101,7 @@ class jsmn_parser {
                          jsmntype_t type);
     int jsmn_parse_primitive();
     int jsmn_parse_string();
-    void render(int depth, unsigned int hash, unsigned int &token, kv_state state);
+    void render(int depth, unsigned int hash, unsigned int &token);
 
   public:
     jsmn_parser(std::string str, unsigned int mull = 2)
