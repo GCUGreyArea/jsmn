@@ -58,7 +58,6 @@ expression:
 | NOT_EQUALS STRING { path.value.type = JQ_STRING_VAL; path.value.value.string_val = copy_string(strval); path.rendered = true;}
 ;
 
-
 %% 
 
 int yyerror(char * er) {
