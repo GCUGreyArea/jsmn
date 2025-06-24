@@ -527,9 +527,9 @@ void jsmn_parser::print_token(int idx) {
  */
 
 void jsmn_parser::render(int depth, unsigned int hash_value,
-                         unsigned int &token, kv_state kv) {
+                         unsigned int &token) {
 
-    // kv_state kv = kv_state::START;
+    kv_state kv = kv_state::START;
     // unsigned int key_hash = 0;
 
     while ((int) token < m_token_next) {
@@ -677,6 +677,16 @@ bool jsmn_parser::is_string(int tkn) {
     }
 
     return m_tokens[tkn].type == JSMN_STRING;    
+}
+
+std::string jsmn_parser::extract_string(int idx) {
+    if(idx >= m_token_next) {
+        throw std::runtime_error("token is out of bounds : " + std::to_string(idx));
+    }
+
+    jsmntok_t *t = &m_tokens[idx];
+    size_t len = t->end - t->start;
+    return std::string(m_js.data() + t->start, len);
 }
 
 /**
