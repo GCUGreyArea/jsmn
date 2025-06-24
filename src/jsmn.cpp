@@ -839,7 +839,6 @@ bool jsmn_parser::update_value_for_key(int k, std::string v) {
 
     std::string start(m_js.data(), val->start);
     std::string end(m_js.data() + val->end,m_js.length()-val->end);
-    // end += '\0';
 
     std::string json = "";
     if((v[0] == '{' && v[v.length()-1] == '}') || (v[0] == '[' && v[v.length()-1] == ']')) {
