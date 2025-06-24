@@ -81,17 +81,17 @@ class jsmn_parser {
     // Default tokens array size
     static constexpr unsigned int def_size = 1024;
 
-    size_t m_pos;        // offset in the JSON string
-    size_t m_token_next; // next token to allocate
+    int m_pos;        // offset in the JSON string
+    int m_token_next; // next token to allocate
     int m_toksuper;      // superior token node, e.g. parent object or array
     jsmntok_t *m_tokens; // Array of tokens
-    unsigned int m_num_tokens; // Number of tokens in the array
+    int m_num_tokens; // Number of tokens in the array
 
     // String to parse
     std::string m_js; // NULL terminated JSON string
-    size_t m_length;  // Length of JSON string
-    size_t m_mull;    // When we ru out pf tokens, grow by * m_mull
-    size_t m_depth;   // Depth into the structure
+    int m_length;  // Length of JSON string
+    int m_mull;    // When we ru out pf tokens, grow by * m_mull
+    int m_depth;   // Depth into the structure
     
     std::map<unsigned int, JQ> m_paths; // The value for each path
 
@@ -120,6 +120,7 @@ class jsmn_parser {
 
     ~jsmn_parser();
     void init(const char *js = "{}");
+    void init(std::string js = "{}");
     int parse();
 
     jsmntok_t *get_tokens() { return m_tokens; }
@@ -135,6 +136,22 @@ class jsmn_parser {
     void render();
 
     JQ * get_path(struct jqpath * p);
+
+    int find_key_in_object(int tkn, std::string search);
+    bool is_object(int tkn);
+    bool is_string(int tkn);
+    std::string extract_string(int tkn);
+    int extract_int(int tkn);
+    bool extract_bool(int tkn);
+
+
+    /// @todo Make these non destructive to recover from failure
+    /// @brief Insert a key value pair into a JSON object
+    bool inster_kv_into_obj(std::string key,std::string value, jsmntype_t type, int obj);
+    ///! @brief Insert a value into a list
+    bool insert_value_in_list(std::string value, jsmntype_t type, int obj);
+    /// @brief Update the value at key with a new value that might be anew type
+    bool update_value_for_key(int k, std::string v);    
 };
 
 #endif /* JSMN_H */
