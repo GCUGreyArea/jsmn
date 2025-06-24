@@ -1,7 +1,12 @@
-#include "JQ.hpp"
-#include "jsmn.hpp"
+
 #include <cstring>
 #include <string>
+#include <exception>
+#include <stdexcept>
+
+
+#include "JQ.hpp"
+#include "jsmn.hpp"
 
 JQ::JQ()
     : hash(0), 
