@@ -25,11 +25,11 @@ public:
     const char *str = s.data();
 
     unsigned int ret = 10;
-    bool neg = false;
+    // bool neg = false;
 
     // Catch negative numbers
     if (*str == '-') {
-      neg = true;
+      // neg = true;
       str++;
     }
 
