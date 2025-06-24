@@ -130,7 +130,7 @@ class jsmn_parser {
     bool deserialise(const char *file_name);
     void print_token(int idx);
     std::string get_json() { return m_js; }
-    std::string extract_string(jsmntok_t *t);
+    // std::string extract_string(jsmntok_t *t);
 
     unsigned int last_token() { return m_token_next; }
     void render();
@@ -151,7 +151,7 @@ class jsmn_parser {
     ///! @brief Insert a value into a list
     bool insert_value_in_list(std::string value, jsmntype_t type, int obj);
     /// @brief Update the value at key with a new value that might be anew type
-    bool update_value_for_key(int k, std::string v);    
+    bool update_value_for_key(int k, std::string v);
 };
 
 #endif /* JSMN_H */
