@@ -1,5 +1,6 @@
 #include <glog/logging.h>
 #include <gtest/gtest.h>
+#include <cstdio>
 
 #include "jsmn.hpp"
 #include "jqpath.h"
@@ -18,8 +19,6 @@ TEST(JQPathJSMN, testJSMNJQPathStringValues) {
 
     ASSERT_TRUE(ret > 0);
     ASSERT_TRUE(path != NULL);
-
-    p.render();
 
     auto * np = p.get_path(path);
     ASSERT_TRUE(np != nullptr);
@@ -41,8 +40,6 @@ TEST(JQPathJSMN, testJSMNJQPathOpenArrayStringValues) {
     ASSERT_TRUE(ret > 0);
     ASSERT_TRUE(path != NULL);
 
-    p.render();
-
     auto * np = p.get_path(path);
     ASSERT_TRUE(np != nullptr);
 
@@ -62,8 +59,6 @@ TEST(JQPathJSMN, testJSMNJQPathOpenArrayStringValuesComplex) {
 
     ASSERT_TRUE(ret > 0);
     ASSERT_TRUE(path != NULL);
-
-    p.render();
 
     auto * np = p.get_path(path);
     ASSERT_TRUE(np != nullptr);
@@ -85,8 +80,6 @@ TEST(JQPathJSMN, testJSMNJQPathOpenArrayStringValuesComplexWithoutEquals) {
     ASSERT_TRUE(ret > 0);
     ASSERT_TRUE(path != NULL);
 
-    p.render();
-
     auto * np = p.get_path(path);
     ASSERT_TRUE(np != nullptr);
 
@@ -107,10 +100,30 @@ TEST(JQPathJSMN, testJSMNJQPathOpenArrayStringValuesSimpleWithoutEquals) {
     ASSERT_TRUE(ret > 0);
     ASSERT_TRUE(path != NULL);
 
-    p.render();
-
     auto * np = p.get_path(path);
     ASSERT_TRUE(np != nullptr);
 
     ASSERT_TRUE(*np == "\"Barry\"");
+}
+
+TEST(JQPathJSMN, testJSMNJQPathLookupAfterDeserialise) {
+    std::string json = "{\"name\":\"Barry\"}";
+    std::string path_str = ".name";
+    const char * serialised_file = "test/resources/jqpath-out.bin";
+
+    jsmn_parser p(json, 2);
+    struct jqpath * path = jqpath_parse_string(path_str.c_str());
+
+    ASSERT_TRUE(p.parse() > 0);
+    ASSERT_TRUE(path != NULL);
+    ASSERT_TRUE(p.serialise(serialised_file));
+
+    jsmn_parser p2;
+    ASSERT_TRUE(p2.deserialise(serialised_file));
+
+    auto * np = p2.get_path(path);
+    ASSERT_TRUE(np != nullptr);
+    ASSERT_TRUE(*np == "\"Barry\"");
+
+    std::remove(serialised_file);
 }

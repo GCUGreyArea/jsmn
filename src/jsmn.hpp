@@ -102,6 +102,7 @@ class jsmn_parser {
     int jsmn_parse_primitive();
     int jsmn_parse_string();
     void render(int depth, unsigned int hash, unsigned int &token);
+    void rebuild_paths();
 
   public:
     jsmn_parser(std::string str, unsigned int mull = 2)

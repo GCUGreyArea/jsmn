@@ -46,7 +46,6 @@ int main(int argc, char **argv) {
         if (search != nullptr) {
             struct jqpath *path = jqpath_parse_string(search);
             if (path != nullptr) {
-                p.render();
                 JQ *val = p.get_path(path);
                 if (val != nullptr) {
                     std::string str = p.extract_string(val->get_token());
