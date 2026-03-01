@@ -157,3 +157,68 @@ TEST(JSMNParser, testLargeFileReadSerialise) {
     // Remove the output file 
     std::system("rm test/resources/outfile.bin");
 }
+
+TEST(JSMNParser, testInsertKVIntoEmptyObject) {
+    jsmn_parser p("{}");
+
+    ASSERT_EQ(p.parse(), 1);
+    ASSERT_TRUE(p.inster_kv_into_obj("\"name\"", "\"Barry\"", JSMN_STRING, 0));
+    ASSERT_EQ(p.get_json(), "{\"name\":\"Barry\"}");
+
+    struct jqpath *path = jqpath_parse_string(".name");
+    ASSERT_TRUE(path != NULL);
+
+    auto *value = p.get_path(path);
+    ASSERT_TRUE(value != nullptr);
+    ASSERT_TRUE(*value == "\"Barry\"");
+
+    jqpath_close_path(path);
+}
+
+TEST(JSMNParser, testInsertValueIntoEmptyList) {
+    jsmn_parser p("[]");
+
+    ASSERT_EQ(p.parse(), 1);
+    ASSERT_TRUE(p.insert_value_in_list("\"Barry\"", JSMN_STRING, 0));
+    ASSERT_EQ(p.get_json(), "[\"Barry\"]");
+}
+
+TEST(JSMNParser, testInvalidInsertDoesNotMutateObject) {
+    jsmn_parser p("{\"name\":\"Barry\"}");
+
+    ASSERT_EQ(p.parse(), 3);
+    const std::string original = p.get_json();
+    ASSERT_FALSE(p.inster_kv_into_obj("\"bad\"", "{", JSMN_OBJECT, 0));
+    ASSERT_EQ(p.get_json(), original);
+
+    struct jqpath *path = jqpath_parse_string(".name");
+    ASSERT_TRUE(path != NULL);
+
+    auto *value = p.get_path(path);
+    ASSERT_TRUE(value != nullptr);
+    ASSERT_TRUE(*value == "\"Barry\"");
+
+    jqpath_close_path(path);
+}
+
+TEST(JSMNParser, testInvalidUpdateDoesNotMutateObject) {
+    jsmn_parser p("{\"age\":12}");
+
+    ASSERT_EQ(p.parse(), 3);
+    const std::string original = p.get_json();
+    const int key_token = p.find_key_in_object(0, "age");
+
+    ASSERT_THROW(p.update_value_for_key(key_token, "{"), std::runtime_error);
+    ASSERT_EQ(p.get_json(), original);
+
+    struct jqpath *path = jqpath_parse_string(".age");
+    ASSERT_TRUE(path != NULL);
+
+    auto *value = p.get_path(path);
+    ASSERT_TRUE(value != nullptr);
+    jsmntok_t *token = p.get_token(key_token + 1);
+    ASSERT_EQ(token->type, JSMN_PRIMITIVE);
+    ASSERT_EQ(p.get_json().substr(token->start, token->end - token->start), "12");
+
+    jqpath_close_path(path);
+}

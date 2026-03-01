@@ -10,10 +10,12 @@
 ## Dependancies
 
 - [Google Test Framework](https://github.com/google/googletest)
+- [Google Benchmark](https://github.com/google/benchmark)
 - [GNU Bison](https://www.gnu.org/software/bison/)
 - [GNU Flex](https://gothub.projectsegfau.lt/westes/flex/)
 
 Google test only needs to be installed if you are planning on building and running the unit tests. 
+Google Benchmark only needs to be installed if you are planning on building and running the benchmarks.
 
 Flex and Bison can be installed with `apt`
 
@@ -32,6 +34,18 @@ Unit tests can be run with
 
 ```bash
 make test
+```
+
+Benchmarks can be built and run with
+
+```bash
+make benchmark
+```
+
+If you want to run only a subset, pass normal Google Benchmark flags, for example:
+
+```bash
+./build/benchmark_jsmn --benchmark_filter=BM_Parse
 ```
 
 ## Creating and using a parser

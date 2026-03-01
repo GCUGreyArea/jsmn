@@ -2,6 +2,9 @@ NAME 	 = jsmn
 
 CFLAGS   = -std=c11 -Wall -g -fPIC
 CXXFLAGS = -std=c++17 -Wall -g -fPIC
+BENCHMARK_FOUND  := $(shell pkg-config --exists benchmark && echo 1)
+BENCHMARK_CFLAGS := $(shell pkg-config --cflags benchmark 2>/dev/null)
+BENCHMARK_LIBS   := $(shell pkg-config --libs benchmark 2>/dev/null)
 
 CC=gcc
 CXX=g++
@@ -10,6 +13,7 @@ CXX=g++
 # unless you know what your doing!
 TARGET  = lib$(NAME).so
 TEST	= test_$(NAME)
+BENCH	= benchmark_$(NAME)
 
 # Yacc file go first because they generat headers
 YACSRC = $(patsubst %.y,%.tab.c,$(wildcard src/*.y))
@@ -29,8 +33,12 @@ TESTCSRC   := $(wildcard test/*.c)
 TESTOBJ	   := $(patsubst %.cpp,build/%.o,$(TESTCXXSRC))
 TESTOBJ	   += $(patsubst %.c,build/%.o,$(TESTCSRC))
 
+BENCHCXXSRC := $(wildcard bench/*.cpp)
+BENCHOBJ    := $(patsubst %.cpp,build/%.o,$(BENCHCXXSRC))
+
 BUILDTARGET = build/$(TARGET)
 TESTTARGET  = build/$(TEST)
+BENCHTARGET = build/$(BENCH)
 
 # Force rebuild of flex and bison files each time
 all: $(BUILDTARGET)
@@ -39,12 +47,22 @@ all: $(BUILDTARGET)
 test: $(BUILDTARGET) $(TESTTARGET)
 	$(TESTTARGET)
 
+benchmark: $(BUILDTARGET) $(BENCHTARGET)
+	$(BENCHTARGET)
+
 # Dynamic Build Rules
 $(BUILDTARGET) : build $(OBJ)
 	$(CXX) $(CXXFLAGS) -fPIC -Lbuild -Isrc $(OBJ) -shared  -o $(BUILDTARGET)
 
 $(TESTTARGET): build $(TESTOBJ)
 	$(CXX) $(CXXFLAGS) -Lbuild -Isrc -Itest $(TESTOBJ) -ljsmn -lgtest -lpthread -lglog -o $(TESTTARGET) -Wl,-rpath,build
+
+$(BENCHTARGET): build $(BENCHOBJ)
+	@if [ "$(BENCHMARK_FOUND)" != "1" ]; then \
+		echo "Google Benchmark not found. Install libbenchmark or expose it via pkg-config."; \
+		exit 1; \
+	fi
+	$(CXX) $(CXXFLAGS) $(BENCHMARK_CFLAGS) -Lbuild -Isrc -Ibench $(BENCHOBJ) -ljsmn $(BENCHMARK_LIBS) -lpthread -o $(BENCHTARGET) -Wl,-rpath,build
 
 cmd_example: $(BUILDTARGET)
 	g++ -std=c++17 -g -Wall -Isrc -c examples/cmd_example.cpp -o cmd_example.o
@@ -67,6 +85,7 @@ doc:
 build:
 	mkdir -p build/src
 	mkdir -p build/test
+	mkdir -p build/bench
 
 src/%.tab.c: src/%.y
 	bison -d $< -o $@

@@ -27,7 +27,7 @@
 #define JSMN_STRICT 1
 #define JSMN_PARENT_LINKS 1
 
-#include <map>
+#include <unordered_map>
 #include <string>
 
 #include "JQ.hpp"
@@ -72,6 +72,22 @@ typedef struct jsmntok {
     int parent;
 } jsmntok_t;
 
+struct path_key {
+    unsigned int hash;
+    unsigned int depth;
+
+    bool operator==(const path_key &other) const {
+        return hash == other.hash && depth == other.depth;
+    }
+};
+
+struct path_key_hash {
+    size_t operator()(const path_key &key) const {
+        return (static_cast<size_t>(key.hash) << 1U) ^
+               static_cast<size_t>(key.depth);
+    }
+};
+
 /**
  * JSON parser. Contains an array of token blocks available. Also stores
  * the string being parsed now and current position in that string.
@@ -93,7 +109,7 @@ class jsmn_parser {
     int m_mull;    // When we ru out pf tokens, grow by * m_mull
     int m_depth;   // Depth into the structure
     
-    std::map<unsigned int, JQ> m_paths; // The value for each path
+    std::unordered_map<path_key, JQ, path_key_hash> m_paths; // The value for each path
 
   protected:
     jsmntok_t *jsmn_alloc_token();
@@ -103,6 +119,7 @@ class jsmn_parser {
     int jsmn_parse_string();
     void render(int depth, unsigned int hash, unsigned int &token);
     void rebuild_paths();
+    void swap_state(jsmn_parser &other);
 
   public:
     jsmn_parser(std::string str, unsigned int mull = 2)

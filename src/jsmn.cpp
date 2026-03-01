@@ -1,13 +1,56 @@
 #include <iostream>
 #include <stack>
 
+#include <cctype>
+#include <cstdio>
 #include <cstring>
+#include <string_view>
+#include <utility>
 
 #include "JQ.hpp"
 #include "Numbers.h"
 #include "hash.h"
 #include "jsmn.hpp"
 #include "kv_state.h"
+
+namespace {
+
+path_key make_path_key(unsigned int hash, unsigned int depth) {
+    return path_key{hash, depth};
+}
+
+bool validate_json_fragment(std::string_view value, jsmntype_t type) {
+    if (value.empty() || type == JSMN_UNDEFINED) {
+        return false;
+    }
+
+    std::string fragment(value);
+    jsmn_parser parser(fragment.c_str());
+    if (parser.parse() < 0 || parser.last_token() == 0) {
+        return false;
+    }
+
+    return parser.get_token(0)->type == type;
+}
+
+std::string build_insert_candidate(const std::string &json, int insert_at,
+                                   std::string_view prefix,
+                                   std::string_view value,
+                                   bool container_is_empty) {
+    std::string candidate;
+    candidate.reserve(json.size() + prefix.size() + value.size() + 2);
+    candidate.append(json.data(), static_cast<size_t>(insert_at));
+    candidate.append(prefix.data(), prefix.size());
+    candidate.append(value.data(), value.size());
+    if (!container_is_empty) {
+        candidate.push_back(',');
+    }
+    candidate.append(json.data() + insert_at,
+                     json.size() - static_cast<size_t>(insert_at));
+    return candidate;
+}
+
+} // namespace
 
 jsmn_parser::~jsmn_parser() {
     if (m_tokens) {
@@ -567,9 +610,9 @@ void jsmn_parser::render(int depth, unsigned int hash_value,
             }
 
             const int key_len = m_tokens[token].end - m_tokens[token].start;
-            std::string key(m_js.c_str() + m_tokens[token].start, key_len);
+            const char *key = m_js.c_str() + m_tokens[token].start;
             unsigned int child_hash =
-                merge_hash(hash_value, hash(key.c_str(), key.length()));
+                merge_hash(hash_value, hash(key, static_cast<size_t>(key_len)));
 
             unsigned int value_token = token + 1;
             if ((int)value_token >= m_token_next) {
@@ -577,7 +620,7 @@ void jsmn_parser::render(int depth, unsigned int hash_value,
             }
 
             JQ path(depth + 1, child_hash, &m_tokens[value_token], m_js.c_str());
-            m_paths.emplace(child_hash, path);
+            m_paths.emplace(make_path_key(child_hash, depth + 1), path);
 
             token = value_token;
             if (m_tokens[token].type == JSMN_OBJECT ||
@@ -601,12 +644,13 @@ void jsmn_parser::render(int depth, unsigned int hash_value,
                 continue;
             }
 
-            std::string element = "[" + std::to_string(index++) + "]";
+            char element[32];
+            int len = std::snprintf(element, sizeof(element), "[%u]", index++);
             unsigned int child_hash =
-                merge_hash(hash_value, hash(element.c_str(), element.length()));
+                merge_hash(hash_value, hash(element, static_cast<size_t>(len)));
 
             JQ path(depth + 1, child_hash, &m_tokens[token], m_js.c_str());
-            m_paths.emplace(child_hash, path);
+            m_paths.emplace(make_path_key(child_hash, depth + 1), path);
 
             if (m_tokens[token].type == JSMN_OBJECT ||
                 m_tokens[token].type == JSMN_ARRAY) {
@@ -621,7 +665,7 @@ void jsmn_parser::render(int depth, unsigned int hash_value,
     case JSMN_STRING:
     case JSMN_PRIMITIVE: {
         JQ path(depth, hash_value, &m_tokens[token], m_js.c_str());
-        m_paths.emplace(hash_value, path);
+        m_paths.emplace(make_path_key(hash_value, depth), path);
         token++;
         break;
     }
@@ -637,6 +681,8 @@ void jsmn_parser::rebuild_paths() {
         return;
     }
 
+    m_paths.reserve(static_cast<size_t>(m_token_next));
+
     unsigned int token = 0;
     render(0, 0, token);
 }
@@ -647,15 +693,28 @@ void jsmn_parser::render() {
 
 JQ *jsmn_parser::get_path(struct jqpath *p) {
     if (p) {
-        auto it = m_paths.find(p->hash);
+        auto it = m_paths.find(make_path_key(p->hash, p->depth));
         if (it != m_paths.end()) {
-            if (it->second.get_depth() == p->depth) {
-                return &it->second;
-            }
+            return &it->second;
         }
     }
 
     return nullptr;
+}
+
+void jsmn_parser::swap_state(jsmn_parser &other) {
+    using std::swap;
+
+    swap(m_pos, other.m_pos);
+    swap(m_token_next, other.m_token_next);
+    swap(m_toksuper, other.m_toksuper);
+    swap(m_tokens, other.m_tokens);
+    swap(m_num_tokens, other.m_num_tokens);
+    swap(m_js, other.m_js);
+    swap(m_length, other.m_length);
+    swap(m_mull, other.m_mull);
+    swap(m_depth, other.m_depth);
+    swap(m_paths, other.m_paths);
 }
 
 // size shows keys + values
@@ -736,125 +795,52 @@ bool jsmn_parser::inster_kv_into_obj(std::string key, std::string value, jsmntyp
         return false;
     }
 
-    // We need to find the insertion place in the string, 
-    // and then reparse to make sure everythinig is OK
     jsmntok_t *t = &m_tokens[obj];
-    std::string objstr(m_js.data() + 0, t->start+1);
-    std::string endpart(m_js.data() + t->start+1, m_js.length() - t->start);
 
-    // Key must be of typep string and must start with and end with "
-    if(key[0] != '"' || key[key.length()-1] != '"') {
+    // Key must be of type string and must start with and end with "
+    if(key.length() < 2 || key[0] != '"' || key[key.length()-1] != '"') {
         return false;
     }
 
-    // Make sure the value is OK based on jsmntype_t value
-    // It must be in itself, legal JSON (when added to a correct object)
-    switch(type) {
-        case JSMN_ARRAY:
-            if(value[0] != '[' || value[value.length()-1] != ']') {
-                return false;
-            }
-
-        case JSMN_OBJECT:
-            if(value[0] != '{' || value[value.length()-1] != '}') {
-                return false;
-            }
-
-        case JSMN_PRIMITIVE:
-            if((value[0] == 't' && value == "true") || (value[0] == 'f' && value == "false")) {
-                break;
-            }
-            else if(isdigit(value[0]) || value[0] == 'e' || value[0] == '-') {
-                break;
-            }
-            return false;
-
-        case JSMN_STRING:
-            // A string value must be "\"value\"" NOT "value"
-            if(value[0] == '"' && value [value.length()-1] == '"') {
-                break;
-            }
-            return false;
-
-        case JSMN_UNDEFINED:
-        default:
-            return false;
+    if(!validate_json_fragment(value, type)) {
+        return false;
     }
 
-    // Make sure that the resulting JSON is OK
-    std::string json = "{" + key + ":" + value + "}";
-    jsmn_parser p;
-    p.init(json);
-    
-    int r = p.parse();
-    if(r < 0) {
-        throw std::runtime_error("key and value create invalid JSON : " + json);
-    }
-
-    json = objstr + key + ":" + value + "," + endpart;
-
-    init(json);
-
-    r = parse();
-    if(r < 0) {
+    std::string prefix = key + ":";
+    std::string json = build_insert_candidate(m_js, t->start + 1, prefix, value,
+                                              t->size == 0);
+    jsmn_parser next(json.c_str(), m_mull);
+    if(next.parse() < 0) {
         throw std::runtime_error("invalid JSON after insert : " + json);
     }
 
+    swap_state(next);
     return true;
 }
 
 bool jsmn_parser::insert_value_in_list(std::string value, jsmntype_t type, int obj) {
 
+    if(obj >= m_token_next) {
+        return false;
+    }
+
     if(m_tokens[obj].type != JSMN_ARRAY) {
         return false;
     }
 
-    jsmntok_t *t = &m_tokens[obj];
-    std::string objstr(m_js.data() + 0, t->start+1);
-    std::string endpart(m_js.data() + t->start+1, m_js.length() - t->start);
-
-    // Make sure the value is OK based on jsmntype_t value
-    // It must be in itself, legal JSON (when added to a correct object)
-    switch(type) {
-        case JSMN_ARRAY:
-            if(value[0] != '[' || value[value.length()-1] != ']') {
-                return false;
-            }
-
-        case JSMN_OBJECT:
-            if(value[0] != '{' || value[value.length()-1] != '}') {
-                return false;
-            }
-
-        case JSMN_PRIMITIVE:
-            if((value[0] == 't' && value == "true") || (value[0] == 'f' && value == "false")) {
-                break;
-            }
-            else if(isdigit(value[0]) || value[0] == 'e' || value[0] == '-') {
-                break;
-            }
-            return false;
-
-        case JSMN_STRING:
-            // A string value must be "\"value\"" NOT "value"
-            if(value[0] == '"' && value [value.length()-1] == '"') {
-                break;
-            }
-            return false;
-
-        case JSMN_UNDEFINED:
-        default:
-            return false;
-    }
-
-
-    std::string json = objstr + value + "," + endpart;
-
-    init(json);
-    if(parse() < 0) {
+    if(!validate_json_fragment(value, type)) {
         return false;
     }
 
+    jsmntok_t *t = &m_tokens[obj];
+    std::string json = build_insert_candidate(m_js, t->start + 1, "", value,
+                                              t->size == 0);
+    jsmn_parser next(json.c_str(), m_mull);
+    if(next.parse() < 0) {
+        throw std::runtime_error("invalid JSON after insert : " + json);
+    }
+
+    swap_state(next);
     return true;
 }
 
@@ -868,24 +854,12 @@ bool jsmn_parser::update_value_for_key(int k, std::string v) {
     std::string start(m_js.data(), val->start);
     std::string end(m_js.data() + val->end,m_js.length()-val->end);
 
-    std::string json = "";
-    if((v[0] == '{' && v[v.length()-1] == '}') || (v[0] == '[' && v[v.length()-1] == ']')) {
-        jsmn_parser p;
-        p.init(v);
-        if(p.parse() < 0) {
-            throw std::runtime_error("invalid JSON : " + v);
-        }
-
-        json = start + v + end;
-    }
-    else {
-        json = start + v + end;
-    }
-
-    init(json);
-    if(parse() < 0) {
+    std::string json = start + v + end;
+    jsmn_parser next(json.c_str(), m_mull);
+    if(next.parse() < 0) {
         throw std::runtime_error("JSON failed to parse : " + json);
     }
 
+    swap_state(next);
     return true;
 }
