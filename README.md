@@ -2,6 +2,7 @@
 
 ## References
 
+- [JSON Paths](https://en.wikipedia.org/wiki/JSONPath)
 - [JQ Paths](https://jqlang.org/manual/)
 - [JSMN C Library](https://github.com/zserge/jsmn)
 - [Path design](docs/path-design.md)
@@ -27,6 +28,13 @@ sudo apt install bison
 ## Introduction
 
 This is a prot of `JSMN` C library to C++. The ongoing work is to implement full `JQ path` compatibility so that the structures representing parsed `JSON` can be searched using `JQ path` syntax. In order to achieve this end the resulting tokens array can be rendered to a `C++` map that will corespond to the hash value parsed by the `JQ Parser`, which is written using `Flex` and `Bison`.
+
+This implementation adds new featers on top of pure C++ compatibility;
+
+1. Manipulation of a compiled `JSON` object using `add` and `delete` for the various `JSON` substructures.
+2. Pure parsing of `JSON` that can then be mapped for `JQ Path` and `JSON Path` search syntax. Both syntax use the same search sturctures so these can be used interchangably.
+
+While this is no longer the fastest `JSON` parser out there, it still has comparable performance. The main goal however is to provide much faster search capability for reading large JSON objects where multiple searchs are required on a single large parsed object.
 
 ## Build and run unit tests
 
