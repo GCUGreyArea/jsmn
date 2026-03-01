@@ -48,6 +48,8 @@ If you want to run only a subset, pass normal Google Benchmark flags, for exampl
 ./build/benchmark_jsmn --benchmark_filter=BM_Parse
 ```
 
+If `simdjson`, `yyjson`, or `RapidJSON` are installed locally, the benchmark target will automatically include side-by-side parse benchmarks for those libraries as well.
+
 ## Creating and using a parser
 
 A number of examples are provided in the `examples` directory. The most basic example can be foudn in [cmd_example.cpp](examples/cmd_example.cpp), This code shows how to use of the parser, along with how to serialise and deserialise parser data. This program can be built by running `make cmd_example` from the main project directory.

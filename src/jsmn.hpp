@@ -108,6 +108,7 @@ class jsmn_parser {
     int m_length;  // Length of JSON string
     int m_mull;    // When we ru out pf tokens, grow by * m_mull
     int m_depth;   // Depth into the structure
+    bool m_paths_dirty; // Path index needs to be rebuilt before lookup
     
     std::unordered_map<path_key, JQ, path_key_hash> m_paths; // The value for each path
 
@@ -119,6 +120,7 @@ class jsmn_parser {
     int jsmn_parse_string();
     void render(int depth, unsigned int hash, unsigned int &token);
     void rebuild_paths();
+    void ensure_paths();
     void swap_state(jsmn_parser &other);
 
   public:
@@ -134,7 +136,8 @@ class jsmn_parser {
           m_js(js), 
           m_length(m_js.length()), 
           m_mull(mull), 
-          m_depth(0) {}
+          m_depth(0),
+          m_paths_dirty(true) {}
 
     ~jsmn_parser();
     void init(const char *js = "{}");

@@ -5,6 +5,30 @@ CXXFLAGS = -std=c++17 -Wall -g -fPIC
 BENCHMARK_FOUND  := $(shell pkg-config --exists benchmark && echo 1)
 BENCHMARK_CFLAGS := $(shell pkg-config --cflags benchmark 2>/dev/null)
 BENCHMARK_LIBS   := $(shell pkg-config --libs benchmark 2>/dev/null)
+SIMDJSON_FOUND   := $(shell pkg-config --exists simdjson && echo 1)
+SIMDJSON_CFLAGS  := $(shell pkg-config --cflags simdjson 2>/dev/null)
+SIMDJSON_LIBS    := $(shell pkg-config --libs simdjson 2>/dev/null)
+YYJSON_FOUND     := $(shell pkg-config --exists yyjson && echo 1)
+YYJSON_CFLAGS    := $(shell pkg-config --cflags yyjson 2>/dev/null)
+YYJSON_LIBS      := $(shell pkg-config --libs yyjson 2>/dev/null)
+RAPIDJSON_FOUND  := $(shell if [ -d /usr/include/rapidjson ] || [ -d /usr/local/include/rapidjson ]; then echo 1; fi)
+
+BENCH_COMPARE_CFLAGS :=
+BENCH_COMPARE_LIBS   :=
+
+ifeq ($(SIMDJSON_FOUND),1)
+BENCH_COMPARE_CFLAGS += $(SIMDJSON_CFLAGS) -DHAVE_SIMDJSON=1
+BENCH_COMPARE_LIBS   += $(SIMDJSON_LIBS)
+endif
+
+ifeq ($(YYJSON_FOUND),1)
+BENCH_COMPARE_CFLAGS += $(YYJSON_CFLAGS) -DHAVE_YYJSON=1
+BENCH_COMPARE_LIBS   += $(YYJSON_LIBS)
+endif
+
+ifeq ($(RAPIDJSON_FOUND),1)
+BENCH_COMPARE_CFLAGS += -DHAVE_RAPIDJSON=1
+endif
 
 CC=gcc
 CXX=g++
@@ -62,7 +86,7 @@ $(BENCHTARGET): build $(BENCHOBJ)
 		echo "Google Benchmark not found. Install libbenchmark or expose it via pkg-config."; \
 		exit 1; \
 	fi
-	$(CXX) $(CXXFLAGS) $(BENCHMARK_CFLAGS) -Lbuild -Isrc -Ibench $(BENCHOBJ) -ljsmn $(BENCHMARK_LIBS) -lpthread -o $(BENCHTARGET) -Wl,-rpath,build
+	$(CXX) $(CXXFLAGS) $(BENCHMARK_CFLAGS) $(BENCH_COMPARE_CFLAGS) -Lbuild -Isrc -Ibench $(BENCHOBJ) -ljsmn $(BENCHMARK_LIBS) $(BENCH_COMPARE_LIBS) -lpthread -o $(BENCHTARGET) -Wl,-rpath,build
 
 cmd_example: $(BUILDTARGET)
 	g++ -std=c++17 -g -Wall -Isrc -c examples/cmd_example.cpp -o cmd_example.o
@@ -98,6 +122,9 @@ build/%.o: %.c
 
 build/%.o: %.cpp
 	$(CXX) -c $(CXXFLAGS) -Lbuild -Isrc -Itest -c $< -o $@
+
+build/bench/%.o: bench/%.cpp
+	$(CXX) -c $(CXXFLAGS) $(BENCHMARK_CFLAGS) $(BENCH_COMPARE_CFLAGS) -Lbuild -Isrc -Ibench -c $< -o $@
 
 clean:
 	rm -rf build cmd_example jsondump simple test.bin tests src/*.tab.h src/*.tab.c src/*.lex.c docs/html

@@ -222,3 +222,23 @@ TEST(JSMNParser, testInvalidUpdateDoesNotMutateObject) {
 
     jqpath_close_path(path);
 }
+
+TEST(JSMNParser, testLazyPathIndexBuildAfterParse) {
+    jsmn_parser p("{\"name\":[\"value 1\",\"value 2\"]}");
+
+    ASSERT_EQ(p.parse(), 5);
+
+    struct jqpath *path = jqpath_parse_string(".name[1]");
+    ASSERT_TRUE(path != NULL);
+
+    auto *value = p.get_path(path);
+    ASSERT_TRUE(value != nullptr);
+    ASSERT_TRUE(*value == "\"value 2\"");
+
+    p.render();
+    value = p.get_path(path);
+    ASSERT_TRUE(value != nullptr);
+    ASSERT_TRUE(*value == "\"value 2\"");
+
+    jqpath_close_path(path);
+}

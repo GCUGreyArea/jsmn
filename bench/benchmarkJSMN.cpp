@@ -1,6 +1,6 @@
 #include <benchmark/benchmark.h>
 
-#include <memory>
+#include <cstdint>
 #include <stdexcept>
 #include <string>
 
@@ -8,7 +8,25 @@
 #include "jsmn.hpp"
 #include "jqpath.h"
 
+#ifdef HAVE_SIMDJSON
+#include <simdjson.h>
+#endif
+
+#ifdef HAVE_YYJSON
+#include <yyjson.h>
+#endif
+
+#ifdef HAVE_RAPIDJSON
+#include <rapidjson/document.h>
+#endif
+
 namespace {
+
+std::int64_t processed_bytes(const std::string &json,
+                             benchmark::State &state) {
+    return static_cast<std::int64_t>(json.size()) *
+           static_cast<std::int64_t>(state.iterations());
+}
 
 class jqpath_ptr {
   public:
@@ -21,36 +39,105 @@ class jqpath_ptr {
     struct jqpath *m_path;
 };
 
-static void BM_ParseSmallDocument(benchmark::State &state) {
+static void BM_JSMNTokenizeOnlySmallDocument(benchmark::State &state) {
     const std::string json = benchmark_fixtures::small_json();
 
     for (auto _ : state) {
         jsmn_parser parser(json.c_str(), 2);
         benchmark::DoNotOptimize(parser.parse());
     }
+
+    state.SetBytesProcessed(processed_bytes(json, state));
 }
 
-static void BM_ParseLargeDocument(benchmark::State &state) {
+static void BM_JSMNTokenizeOnlyLargeDocument(benchmark::State &state) {
     const std::string json = benchmark_fixtures::large_json();
 
     for (auto _ : state) {
         jsmn_parser parser(json.c_str(), 2);
         benchmark::DoNotOptimize(parser.parse());
     }
+
+    state.SetBytesProcessed(processed_bytes(json, state));
+}
+
+static void BM_JSMNParseAndIndexLargeDocument(benchmark::State &state) {
+    const std::string json = benchmark_fixtures::large_json();
+
+    for (auto _ : state) {
+        jsmn_parser parser(json.c_str(), 2);
+        benchmark::DoNotOptimize(parser.parse());
+        parser.render();
+        benchmark::ClobberMemory();
+    }
+
+    state.SetBytesProcessed(processed_bytes(json, state));
 }
 
 static void BM_RebuildPathsMediumDocument(benchmark::State &state) {
     const std::string json = benchmark_fixtures::medium_json();
-    jsmn_parser parser(json.c_str(), 2);
-    if (parser.parse() < 0) {
-        throw std::runtime_error("failed to parse medium benchmark fixture");
-    }
 
     for (auto _ : state) {
+        jsmn_parser parser(json.c_str(), 2);
+        if (parser.parse() < 0) {
+            throw std::runtime_error("failed to parse medium benchmark fixture");
+        }
         parser.render();
         benchmark::ClobberMemory();
     }
 }
+
+#ifdef HAVE_SIMDJSON
+static void BM_SimdjsonParseLargeDocument(benchmark::State &state) {
+    const std::string json = benchmark_fixtures::large_json();
+
+    for (auto _ : state) {
+        simdjson::dom::parser parser;
+        auto document = parser.parse(json);
+        if (document.error()) {
+            throw std::runtime_error("simdjson parse failed");
+        }
+        benchmark::DoNotOptimize(document.value_unsafe());
+    }
+
+    state.SetBytesProcessed(processed_bytes(json, state));
+}
+#endif
+
+#ifdef HAVE_YYJSON
+static void BM_YYJSONParseLargeDocument(benchmark::State &state) {
+    const std::string json = benchmark_fixtures::large_json();
+
+    for (auto _ : state) {
+        yyjson_doc *document =
+            yyjson_read(json.data(), json.size(), YYJSON_READ_NOFLAG);
+        if (document == nullptr) {
+            throw std::runtime_error("yyjson parse failed");
+        }
+        benchmark::DoNotOptimize(yyjson_doc_get_root(document));
+        yyjson_doc_free(document);
+    }
+
+    state.SetBytesProcessed(processed_bytes(json, state));
+}
+#endif
+
+#ifdef HAVE_RAPIDJSON
+static void BM_RapidJSONParseLargeDocument(benchmark::State &state) {
+    const std::string json = benchmark_fixtures::large_json();
+
+    for (auto _ : state) {
+        rapidjson::Document document;
+        document.Parse(json.c_str());
+        if (document.HasParseError()) {
+            throw std::runtime_error("RapidJSON parse failed");
+        }
+        benchmark::DoNotOptimize(document.GetType());
+    }
+
+    state.SetBytesProcessed(processed_bytes(json, state));
+}
+#endif
 
 static void BM_GetPathJQ(benchmark::State &state) {
     const std::string json = benchmark_fixtures::small_json();
@@ -140,14 +227,27 @@ static void BM_UpdatePrimitiveValue(benchmark::State &state) {
     }
 }
 
-BENCHMARK(BM_ParseSmallDocument);
-BENCHMARK(BM_ParseLargeDocument);
+BENCHMARK(BM_JSMNTokenizeOnlySmallDocument);
+BENCHMARK(BM_JSMNTokenizeOnlyLargeDocument);
+BENCHMARK(BM_JSMNParseAndIndexLargeDocument);
 BENCHMARK(BM_RebuildPathsMediumDocument);
 BENCHMARK(BM_GetPathJQ);
 BENCHMARK(BM_GetPathJSONPath);
 BENCHMARK(BM_InsertIntoEmptyObject);
 BENCHMARK(BM_InsertIntoEmptyArray);
 BENCHMARK(BM_UpdatePrimitiveValue);
+
+#ifdef HAVE_SIMDJSON
+BENCHMARK(BM_SimdjsonParseLargeDocument);
+#endif
+
+#ifdef HAVE_YYJSON
+BENCHMARK(BM_YYJSONParseLargeDocument);
+#endif
+
+#ifdef HAVE_RAPIDJSON
+BENCHMARK(BM_RapidJSONParseLargeDocument);
+#endif
 
 } // namespace
 

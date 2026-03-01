@@ -419,11 +419,7 @@ int jsmn_parser::parse() {
         }
     }
 
-    try {
-        rebuild_paths();
-    } catch (const std::exception &) {
-        return JSMN_ERROR_INVAL;
-    }
+    m_paths_dirty = true;
 
     return count;
 }
@@ -438,6 +434,7 @@ void jsmn_parser::init(const char *js) {
     m_toksuper = -1;
 
     m_paths.clear();
+    m_paths_dirty = true;
     m_js = js;
     m_length = m_js.length();
     std::memset(m_tokens, 0, sizeof(jsmntok_t) * m_num_tokens);
@@ -479,6 +476,7 @@ bool jsmn_parser::serialise(const char *file_name) {
  */
 bool jsmn_parser::deserialise(const char *file_name) {
     m_paths.clear();
+    m_paths_dirty = true;
 
     FILE *fp = fopen(file_name, "rd");
     if (fp == NULL) {
@@ -529,12 +527,6 @@ bool jsmn_parser::deserialise(const char *file_name) {
     }
 
     fclose(fp);
-
-    try {
-        rebuild_paths();
-    } catch (const std::exception &) {
-        return false;
-    }
 
     return true;
 
@@ -678,6 +670,7 @@ void jsmn_parser::render(int depth, unsigned int hash_value,
 void jsmn_parser::rebuild_paths() {
     m_paths.clear();
     if (m_token_next == 0) {
+        m_paths_dirty = false;
         return;
     }
 
@@ -685,14 +678,24 @@ void jsmn_parser::rebuild_paths() {
 
     unsigned int token = 0;
     render(0, 0, token);
+    m_paths_dirty = false;
+}
+
+void jsmn_parser::ensure_paths() {
+    if (!m_paths_dirty) {
+        return;
+    }
+
+    rebuild_paths();
 }
 
 void jsmn_parser::render() {
-    rebuild_paths();
+    ensure_paths();
 }
 
 JQ *jsmn_parser::get_path(struct jqpath *p) {
     if (p) {
+        ensure_paths();
         auto it = m_paths.find(make_path_key(p->hash, p->depth));
         if (it != m_paths.end()) {
             return &it->second;
@@ -714,6 +717,7 @@ void jsmn_parser::swap_state(jsmn_parser &other) {
     swap(m_length, other.m_length);
     swap(m_mull, other.m_mull);
     swap(m_depth, other.m_depth);
+    swap(m_paths_dirty, other.m_paths_dirty);
     swap(m_paths, other.m_paths);
 }
 
