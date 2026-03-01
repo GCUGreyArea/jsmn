@@ -68,7 +68,7 @@ build:
 	mkdir -p build/src
 	mkdir -p build/test
 
-src/%.tab.c: src/*.y
+src/%.tab.c: src/%.y
 	bison -d $< -o $@
 
 src/%.lex.c: src/%.l
@@ -81,7 +81,6 @@ build/%.o: %.cpp
 	$(CXX) -c $(CXXFLAGS) -Lbuild -Isrc -Itest -c $< -o $@
 
 clean:
-	rm -rf build cmd_example jsondump simple test.bin tests src/*.tab.h  docs/html
+	rm -rf build cmd_example jsondump simple test.bin tests src/*.tab.h src/*.tab.c src/*.lex.c docs/html
 
 .PRECIOUS: *.tab.c 
-

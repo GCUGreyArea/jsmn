@@ -44,7 +44,7 @@ int main(int argc, char **argv) {
     if (argc == 3) {
         const char *search = argv[2];
         if (search != nullptr) {
-            struct jqpath *path = jqpath_parse_string(search);
+            struct jqpath *path = path_parse_string(search);
             if (path != nullptr) {
                 JQ *val = p.get_path(path);
                 if (val != nullptr) {
@@ -57,6 +57,9 @@ int main(int argc, char **argv) {
                               << std::endl;
                     exit - 1;
                 }
+            } else {
+                std::cerr << "Failed to parse path: " << argv[2] << std::endl;
+                return -1;
             }
         }
     }

@@ -2,6 +2,7 @@
 #include <glog/logging.h>
 
 #include <jsmn.hpp>
+#include <set>
 
 extern int lex_depth;
 
@@ -31,6 +32,7 @@ TEST(JQParser,testJQParser) {
     path = jqpath_parse_string(str);
     ASSERT_TRUE(path != NULL);
     jqpath_close_path(path);
+
 }
 
 TEST(JQParser,testJQDepth) {
@@ -132,4 +134,23 @@ TEST(JQParser,testJQDepth) {
 
     ASSERT_TRUE(val1 == val2);
     jqpath_close_path(path);
+
+}
+
+TEST(JQParser, testDirectJQParserRejectsJSONPathSyntax) {
+    struct jqpath *path = jqpath_parse_string("$.name[1]");
+    ASSERT_TRUE(path == NULL);
+}
+
+TEST(JQParser, testAutoPathParserDispatchesJQSyntax) {
+    struct jqpath *direct = jqpath_parse_string(".name[1].value");
+    struct jqpath *dispatched = path_parse_string(".name[1].value");
+
+    ASSERT_TRUE(direct != NULL);
+    ASSERT_TRUE(dispatched != NULL);
+    ASSERT_EQ(direct->depth, dispatched->depth);
+    ASSERT_EQ(direct->hash, dispatched->hash);
+
+    jqpath_close_path(direct);
+    jqpath_close_path(dispatched);
 }

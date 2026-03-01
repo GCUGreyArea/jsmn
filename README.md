@@ -44,6 +44,23 @@ You can run the command test program with the following command
 ./build/cmd_example '{"name":"barry"}' ".name"
 ```
 
+The project now exposes separate parser entry points for the two path languages:
+
+```c++
+struct jqpath * jq = jqpath_parse_string(".name[1]");
+struct jqpath * json = jsonpath_parse_string("$.name[1]");
+struct jqpath * either = path_parse_string(user_input);
+```
+
+All three return the same `jqpath` structure, so the same `get_path()` lookup code works with either language.
+
+The same lookup API also accepts JSONPath-style input such as:
+
+```bash
+./build/cmd_example '{"name":["alice","barry"]}' '$.name[1]'
+./build/cmd_example '{"user_name":{"first name":"barry"}}' '$["user_name"]["first name"]'
+```
+
 You should see the output
 
 ```bash
@@ -138,7 +155,7 @@ would produce
 
 ### Parser reentrancy
 
-The current `Flex` / `Bison` parser for the `JQ path` search syntax, because it declares glob assets, is not currently reentrant. This is easily remedied by moveing all values into a dynamically assigned structre to maintain state.
+The `JQ path` and `JSONPath` parsers now use per-parse heap-allocated parser contexts, so parser state is no longer shared through global lexer/parser variables.
 
 ### Correct numeric equality
 

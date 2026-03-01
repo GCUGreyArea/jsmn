@@ -55,6 +55,8 @@ struct jqpath {
 };
 
 struct jqpath* jqpath_parse_string(const char * str);
+struct jqpath* jsonpath_parse_string(const char * str);
+struct jqpath* path_parse_string(const char * str);
 struct jqpath* jqpath_get_path();
 void jqpath_close_path(struct jqpath* path);
 
